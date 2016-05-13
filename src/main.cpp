@@ -15,6 +15,14 @@
 using namespace std;
 using namespace boost::algorithm;
 
+class Base{
+public:
+    Base(){};
+    virtual bool evaluate() =0;
+
+
+}
+
 int main () {
 
     return 0;

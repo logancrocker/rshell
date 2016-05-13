@@ -223,13 +223,13 @@ int main () {
                 //this will make a comand ready for the execvp funct
                 vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
                 if (connectors.at(i) == "&&") { //for and
-                    NxtCommand = new ConnectAnd(temp2, new Command(CommandReady));
+                    NxtCommand = new And(temp2, new Command(CommandReady));
                 }
                 else if (connectors.at(i) == "||") { //for or 
-                    NxtCommand = new ConnectOr(temp2, new Command(CommandReady));
+                    NxtCommand = new Or(temp2, new Command(CommandReady));
                 }
                 else if (connectors.at(i) == ";") {//for semicolon
-                    NxtCommand = new ConnectSem(temp2, new Command(CommandReady));                    
+                    NxtCommand = new Semicolon(temp2, new Command(CommandReady));                    
                 }
                 NxtCommand->evaluate();
             }

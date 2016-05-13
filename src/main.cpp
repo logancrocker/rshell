@@ -97,7 +97,6 @@ public:
 };
 
 class Connectors : public Base {
-<<<<<<< HEAD
     public:
         Connectors(){};
     
@@ -116,28 +115,6 @@ class Semicolon : public Connectors {
         bool evaluate() {
             return rightCommand->evaluate();
         }
-};
-
-class Or : public Connectors {
-    public:
-        Or(bool first, Base* right) {leftCommand = first; rightCommand = right;}
-        bool evaluate() {
-            if (!leftCommand) {
-                return rightCommand->evaluate();
-            }
-            else {
-                return false;
-            }
-        }
-};
-=======
-private:
-    //Not sure if these need to be here or not, seems to work without it - Ammar
-//Connectors() : Base (){};
-//    ~Connectors();
-protected:
-    bool leftCommand; //command b4 the connector
-    Base* rightCommand; //command @ft3r the connect0r
 };
 
 //will run the rightcommand if leftcommand succededs
@@ -167,22 +144,6 @@ public:
         return false;
     }
 };
-
-//will always attempt to run rightCommand
-class Semicolon : public Connectors{
-public:
-    Semicolon(bool l, Base* r){
-        leftCommand = l; rightCommand = r;
-    }
-  
-    //Return if it evaluated or not
-    bool evaluate(){
-        return rightCommand->evaluate();
-    }
-};
-
->>>>>>> f446ffd6a2ad572ab94262e1258b5ceac5848ec2
-
 
 //This Function takes the user input and parses it returns us a vector of strings - Ammar
 vector<string> parser(string toSplit, const char* delimiters) {

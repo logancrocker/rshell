@@ -184,19 +184,57 @@ int main () {
         
         getline(cin, commandInput);
         // Gets rid of leading and ending uneeded space - Ammar
-        trim(initialCommand);
+        trim(commandInput);
         bool blank = false;
         if(commandInput == ""){
             blank = true;
         }
         while(blank == false){
-            //FIXME:: NEED TO ADD STUFF HERE
+            string inputCommand = commandInput.substr(0, commandInput.find('#', 1));        
+            vector<string> connectors;
+            //filling vector of connectors
+            for(unsigned int i = 0; i < inputCommand.length(); i++){
+                if(inputCommand[i] == '|'){
+                    if(inputCommand[i + 1] == '|'){
+                        connectors.push_back("||");        
+                    } 
+                }
+                else if(inputCommand[i] == '&'){
+                    if(inputCommand[i + 1] == '&'){
+                        connectors.push_back("&&");
+                    }
+                }
+                else if(inputCommand[i] == ';'){
+                    connectors.push_back(";");
+                }
+            }
             
+            //parses inputs of multiple commands
+            vector<string> myCommands = parser(inputCommand, "||&&;");
+            
+            vector<string> command1 = parser(myCommands.at(0), " ");
+            Base* firstCommand = new Command(command1);
+            bool temp2 = firstCommand->evaluate(); //run first command and see if fail or succesful
+            
+            //here we have to make desicions base on the temp2 = true or false    
+            for(unsigned int i = 0; i < connectors.size(); i ++){
+                
+                Base* NxtCommand;
+                //this will make a comand ready for the execvp funct
+                vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
+                if (connectors.at(i) == "&&") { //for and
+                    NxtCommand = new ConnectAnd(temp2, new Command(CommandReady));
+                }
+                else if (connectors.at(i) == "||") { //for or 
+                    NxtCommand = new ConnectOr(temp2, new Command(CommandReady));
+                }
+                else if (connectors.at(i) == ";") {//for semicolon
+                    NxtCommand = new ConnectSem(temp2, new Command(CommandReady));                    
+                }
+                NxtCommand->evaluate();
+            }
             blank = true; //this means done with this command and wants next one
         }
-        
-        
     }
-    
     return 0;
 }

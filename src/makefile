@@ -1,3 +1,4 @@
 all:
-	g++ -Wall -Werror -ansi -pedantic
+	g++ -Wall -Werror -ansi -pedantic main.cpp
+	
 

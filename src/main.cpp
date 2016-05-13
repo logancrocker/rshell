@@ -45,6 +45,23 @@ class Connectors : public Base {
         Base* rightCommand;
 };
 
+vector<string> split(string toSplit, const char* delimiters) {
+    char* toTokenize = new char[toSplit.size() + 1];
+    strcpy(toTokenize, toSplit.c_str());
+    toTokenize[toSplit.size() + 1] = '\0';
+    char* cutThis;
+    //begin parsing
+    cutThis = strtok(toTokenize, delimiters);
+    vector<string> returnThis;
+    while (cutThis != NULL) {
+        string currWord(cutThis);
+        trim(currWord);
+        returnThis.push_back(currWord);
+        cutThis = strtok(NULL, delimiters);
+    }
+    return returnThis;
+}
+
 int main () {
     
     //take user input

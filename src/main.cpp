@@ -21,6 +21,16 @@ class Base{
         virtual bool evaluate() = 0;
 }
 
+class Command: public Base{
+    private:
+        vector<string> commandVec;
+    public:
+        Command(vector<string>s){
+            commandVec = s;
+        }
+  
+};
+
 int main () {
     
     //take user input

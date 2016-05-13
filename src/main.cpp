@@ -126,13 +126,25 @@ int main () {
     //take user input
     string initialCommand = "";
     
-    while (true) {
+    while (true) { //infinite loop is there until exit is found
+        //this is the extra credit part
         string login = getlogin();
         char hostname[100];
         gethostname(hostname, 100);
         cout << "[" << login << "@" << hostname << "] $ ";
+        
         getline(cin, initialCommand);
         trim(initialCommand);
+        bool noCMD = false;
+        if(initialCommand == ""){
+            noCMD = true;
+        }
+        while(noCMD == false){
+            //FIXME:: NEED TO ADD STUFF HERE
+            
+            noCMD = true; //this means done with this command and wants next one
+        }
+        
         
     }
     

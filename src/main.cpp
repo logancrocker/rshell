@@ -104,7 +104,18 @@ class Connectors : public Base {
         Base* rightCommand; //command @ft3r the connect0r
 };
 
-
+//will run the rightcommand if leftcommand succededs
+class And : public Connectors{
+    public:
+    Or(bool l, Base* r){
+        leftCommand = l; rightCommand = r;
+    }
+    bool evaluate(){
+        if(leftCommand)
+            return rightCommand->evaluate();
+        return false;
+    }
+};
 
 //will run the rightCommand if the LeftCommand fails
 class Or : public Connectors{

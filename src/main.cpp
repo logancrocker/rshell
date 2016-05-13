@@ -16,14 +16,22 @@ using namespace std;
 using namespace boost::algorithm;
 
 class Base{
-public:
-    Base(){};
-    virtual bool evaluate() =0;
-
-
+    public:
+        Base(){};
+        virtual bool evaluate() = 0;
 }
 
 int main () {
+    
+    //take user input
+    string initialCommand = "";
+    while (true) {
+        string login = getlogin();
+        char hostname[100];
+        gethostname(hostname, 100);
+        cout << "[" << login << "@" << hostname << "] $ ";
+        getline(cin, initialCommand);
+        trim(initialCommand);
 
     return 0;
 }

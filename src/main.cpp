@@ -33,5 +33,7 @@ int main () {
         getline(cin, initialCommand);
         trim(initialCommand);
 
+    }
+
     return 0;
 }

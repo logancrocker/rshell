@@ -115,6 +115,19 @@ class And : public Connectors {
         }
 };
 
+class Or : public Connectors {
+    public:
+        Or(bool first, Base* right) {leftCommand = first; rightCommand = right}
+        bool evaluate() {
+            if (!leftCommand) {
+                return rightCommand->evaluate();
+            }
+            else {
+                return false;
+            }
+        }
+};
+
 vector<string> parser(string toSplit, const char* delimiters) {
     char* toTokenize = new char[toSplit.size() + 1];
     strcpy(toTokenize, toSplit.c_str());

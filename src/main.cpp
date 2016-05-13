@@ -15,22 +15,22 @@
 using namespace std;
 using namespace boost::algorithm;
 
-//Virtual Base Class
+//Virtual Base Class - Ammar
 class Base  {
-    public:
-        Base(){};
-        //Function Inherited by each class
-        virtual bool evaluate() = 0;
+public:
+    Base(){};
+    //Function Inherited by each class - Ammar
+    virtual bool evaluate() = 0;
 };
 
-// Command Class that each command will inherit from
+// Command Class that each command will inherit from - Ammar
 class Command: public Base {
-    private:
+private:
     
-    //Vector of commands
+    //Vector of commands - Ammar
     vector<string> commandVec;
-
-    public:
+    
+public:
     
     //Contructor to take in vector and set it to commands vectors
     Command(vector<string>s){
@@ -40,28 +40,29 @@ class Command: public Base {
         
         //exit if cmd is "exit"
         if(commandVec[0] == "exit")
+            //Program stops if input is "exit" - Ammar
             exit(0);
         
         //this chunk is to format the vector in the way we want it
         vector<char *> temp2;
         for(unsigned int i = 0; i < commandVec.size(); i++) {
-            temp2.push_back(const_cast<char *>(commandVec.at(i).c_str()));
+            temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
         }
         temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
-        char** arr = &temp2[0];
-
-
+        char** arrChar = &temp2[0];
+        
+        
         //here we will use fork() so we can do multiple process at once
         int status;
         pid_t pid = fork();
         if (pid < 0) { //to chck if fork failed
-            perror("FORK has FAILED");
+            perror("FAILED");
             exit(1);
         }
         else if (pid == 0) {
             //if it reaches here, you can pass into execvp
             //execvp will do all the work for you
-            execvp(const_cast<char *>(arr[0]), arr);
+            execvp(const_cast<char *>(arrChar[0]), arrChar);
             //if it reaches here there is some error
             exit(127); // exit 127 "command not found"
         }
@@ -91,23 +92,24 @@ class Command: public Base {
                 return false;
             }
         }
-        return false;            
-    } 
+        return false;
+    }
 };
 
 class Connectors : public Base {
-    private:
-        Connectors(){};
-    
-    protected:
-        bool leftCommand; //command b4 the connector
-        Base* rightCommand; //command @ft3r the connect0r
+private:
+    //Not sure if these need to be here or not, seems to work without it - Ammar
+//Connectors() : Base (){};
+//    ~Connectors();
+protected:
+    bool leftCommand; //command b4 the connector
+    Base* rightCommand; //command @ft3r the connect0r
 };
 
 //will run the rightcommand if leftcommand succededs
 class And : public Connectors{
-    public:
-    Or(bool l, Base* r){
+public:
+    And(bool l, Base* r){
         leftCommand = l; rightCommand = r;
     }
     bool evaluate(){
@@ -119,10 +121,12 @@ class And : public Connectors{
 
 //will run the rightCommand if the LeftCommand fails
 class Or : public Connectors{
-    public:
+public:
     Or(bool l, Base* r){
         leftCommand = l; rightCommand = r;
     }
+    
+    //Return if it evaluated or not
     bool evaluate(){
         if(!leftCommand)
             return rightCommand->evaluate();
@@ -132,28 +136,20 @@ class Or : public Connectors{
 
 //will always attempt to run rightCommand
 class Semicolon : public Connectors{
-    public:
+public:
     Semicolon(bool l, Base* r){
         leftCommand = l; rightCommand = r;
     }
-    bool evaluate{
+  
+    //Return if it evaluated or not
+    bool evaluate(){
         return rightCommand->evaluate();
     }
 };
 
-class Or : public Connectors {
-    public:
-        Or(bool first, Base* right) {leftCommand = first; rightCommand = right}
-        bool evaluate() {
-            if (!leftCommand) {
-                return rightCommand->evaluate();
-            }
-            else {
-                return false;
-            }
-        }
-};
 
+
+//This Function takes the user input and parses it returns us a vector of strings - Ammar
 vector<string> parser(string toSplit, const char* delimiters) {
     char* toTokenize = new char[toSplit.size() + 1];
     strcpy(toTokenize, toSplit.c_str());
@@ -181,6 +177,9 @@ int main () {
         string login = getlogin();
         char hostname[100];
         gethostname(hostname, 100);
+        
+        //display login and host name and waits for user input
+        
         cout << "[" << login << "@" << hostname << "] $ ";
         
         getline(cin, initialCommand);

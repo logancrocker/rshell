@@ -170,9 +170,9 @@ vector<string> parser(string toSplit, const char* delimiters) {
 int main () {
     
     //take user input
-    string initialCommand = "";
+    string commandInput = "";
     
-    while (true) { //infinite loop is there until exit is found
+    while (true) { //Keep checking until exit is found
         //this is the extra credit part
         string login = getlogin();
         char hostname[100];
@@ -180,18 +180,19 @@ int main () {
         
         //display login and host name and waits for user input
         
-        cout << "[" << login << "@" << hostname << "] $ ";
+        cout << "[ " << login << " @ " << hostname << " ] $ ";
         
-        getline(cin, initialCommand);
+        getline(cin, commandInput);
+        // Gets rid of leading and ending uneeded space - Ammar
         trim(initialCommand);
-        bool noCMD = false;
-        if(initialCommand == ""){
-            noCMD = true;
+        bool blank = false;
+        if(commandInput == ""){
+            blank = true;
         }
-        while(noCMD == false){
+        while(blank == false){
             //FIXME:: NEED TO ADD STUFF HERE
             
-            noCMD = true; //this means done with this command and wants next one
+            blank = true; //this means done with this command and wants next one
         }
         
         

@@ -45,7 +45,7 @@ class Connectors : public Base {
         Base* rightCommand;
 };
 
-vector<string> split(string toSplit, const char* delimiters) {
+vector<string> parser(string toSplit, const char* delimiters) {
     char* toTokenize = new char[toSplit.size() + 1];
     strcpy(toTokenize, toSplit.c_str());
     toTokenize[toSplit.size() + 1] = '\0';

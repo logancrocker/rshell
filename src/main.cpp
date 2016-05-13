@@ -96,7 +96,7 @@ class Command: public Base {
 };
 
 class Connectors : public Base {
-    private:
+    public:
         Connectors(){};
     
     protected:
@@ -104,35 +104,21 @@ class Connectors : public Base {
         Base* rightCommand; //command @ft3r the connect0r
 };
 
-
-
-//will run the rightCommand if the LeftCommand fails
-class Or : public Connectors{
-    public:
-    Or(bool l, Base* r){
-        leftCommand = l; rightCommand = r;
-    }
-    bool evaluate(){
-        if(!leftCommand)
-            return rightCommand->evaluate();
-        return false;
-    }
-};
-
 //will always attempt to run rightCommand
-class Semicolon : public Connectors{
+class Semicolon : public Connectors {
     public:
-    Semicolon(bool l, Base* r){
-        leftCommand = l; rightCommand = r;
-    }
-    bool evaluate{
-        return rightCommand->evaluate();
-    }
+        Semicolon(bool l, Base* r){
+            leftCommand = l; 
+            rightCommand = r;
+        }
+        bool evaluate() {
+            return rightCommand->evaluate();
+        }
 };
 
 class Or : public Connectors {
     public:
-        Or(bool first, Base* right) {leftCommand = first; rightCommand = right}
+        Or(bool first, Base* right) {leftCommand = first; rightCommand = right;}
         bool evaluate() {
             if (!leftCommand) {
                 return rightCommand->evaluate();

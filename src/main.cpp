@@ -100,19 +100,34 @@ class Connectors : public Base {
         Connectors(){};
     
     protected:
-        bool leftCommand;
-        Base* rightCommand;
+        bool leftCommand; //command b4 the connector
+        Base* rightCommand; //command @ft3r the connect0r
 };
 
-class And : public Connectors {
+
+
+//will run the rightCommand if the LeftCommand fails
+class Or : public Connectors{
     public:
-        And(bool first, Base* right) {leftCommand = first; rightCommand = right}
-        bool evaluate() {
-            if (leftCommand) {
-                return rightCommand->evaluate();
-            }
-            else return false;
-        }
+    Or(bool l, Base* r){
+        leftCommand = l; rightCommand = r;
+    }
+    bool evaluate(){
+        if(!leftCommand)
+            return rightCommand->evaluate();
+        return false;
+    }
+};
+
+//will always attempt to run rightCommand
+class Semicolon : public Connectors{
+    public:
+    Semicolon(bool l, Base* r){
+        leftCommand = l; rightCommand = r;
+    }
+    bool evaluate{
+        return rightCommand->evaluate();
+    }
 };
 
 class Or : public Connectors {

@@ -176,7 +176,7 @@ int main () {
         
         //display login and host name and waits for user input
         
-        cout << "[ " << login << " @ " << hostname << " ] $ ";
+        cout << "[" << login << "@" << hostname << "] $ ";
         
         getline(cin, commandInput);
         // Gets rid of leading and ending uneeded space - Ammar

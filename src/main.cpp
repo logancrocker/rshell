@@ -1,3 +1,12 @@
+//
+//  AHDFH.cpp
+//  CS100
+//
+//  Created by Ammar Rizvi on 5/12/16.
+//  Copyright © 2016 Ammar Rizvi. All rights reserved.
+//
+
+#include "AHDFH.hpp"
 #include <iostream>
 #include <vector>
 #include <list>
@@ -10,25 +19,18 @@
 #include <netdb.h>
 #include <pwd.h>
 #include <sys/socket.h>
-#include <boost/algorithm/string.hpp>
+//#include <boost/algorithm/string.hpp>
 
 using namespace std;
-using namespace boost::algorithm;
+//using namespace boost::algorithm;
 
+
+// Virtual Base Class
 class Base{
-    public:
-        Base(){};
-        virtual bool evaluate() = 0;
-}
-
-class Command: public Base{
-    private:
-        vector<string> commandVec;
-    public:
-        Command(vector<string>s){
-            commandVec = s;
-        }
-  
+public:
+    Base(){};
+    // Virtual Function that will be inherited
+    virtual bool evaluate() = 0;
 };
 
 int main () {
@@ -42,8 +44,8 @@ int main () {
         cout << "[" << login << "@" << hostname << "] $ ";
         getline(cin, initialCommand);
         trim(initialCommand);
-
+        
     }
-
+    
     return 0;
 }

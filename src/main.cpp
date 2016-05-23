@@ -145,6 +145,9 @@ public:
     }
 };
 
+//class Test : public Command {
+
+
 //This Function takes the user input and parses it returns us a vector of strings - Ammar
 vector<string> parser(string toSplit, const char* delimiters) {
     char* toTokenize = new char[toSplit.size() + 1];
@@ -163,6 +166,15 @@ vector<string> parser(string toSplit, const char* delimiters) {
     return returnThis;
 }
 
+//template function to print a vector
+template <typename T>
+void printVec(vector<T> &v) {
+    for (int i = 0; i < v.size(); ++i) {
+        cout << v.at(i) << " ";
+    }
+    cout << endl;
+}
+
 int main () {
     
     //take user input
@@ -179,6 +191,9 @@ int main () {
         cout << "[" << login << "@" << hostname << "] $ ";
         
         getline(cin, commandInput);
+
+        //print the input
+        cout << "Input string: " << commandInput << endl;
         // Gets rid of leading and ending uneeded space - Ammar
         trim(commandInput);
         bool blank = false;
@@ -204,11 +219,17 @@ int main () {
                     connectors.push_back(";");
                 }
             }
-            
+            //print connectors
+            cout << "elements of \"connectors\" vector: "; printVec(connectors);
+
             //parses inputs of multiple commands
             vector<string> myCommands = parser(inputCommand, "||&&;");
-            
+            //print myCommands
+            cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
+
             vector<string> command1 = parser(myCommands.at(0), " ");
+            //print command1
+            cout << "elements of \"command1\" vector: "; printVec(command1);
             Base* firstCommand = new Command(command1);
             bool temp2 = firstCommand->evaluate(); //run first command and see if fail or succesful
             
@@ -218,6 +239,8 @@ int main () {
                 Base* NxtCommand;
                 //this will make a comand ready for the execvp funct
                 vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
+                //print CommandReady
+                cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
                 if (connectors.at(i) == "&&") { //for and
                     NxtCommand = new And(temp2, new Command(CommandReady));
                 }

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
@@ -25,75 +26,68 @@ public:
 
 // Command Class that each command will inherit from - Ammar
 class Command: public Base {
-private:
+    private: 
+        //Vector of commands - Ammar
+        vector<string> commandVec;
     
-    //Vector of commands - Ammar
-    vector<string> commandVec;
-    
-public:
-    
-    //Contructor to take in vector and set it to commands vectors
-    Command(vector<string>s){
-        commandVec = s;
-    }
-    bool evaluate(){
-        
-        //exit if cmd is "exit"
-        if(commandVec[0] == "exit")
-            //Program stops if input is "exit" - Ammar
-            exit(0);
-        
-        //this chunk is to format the vector in the way we want it
-        vector<char *> temp2;
-        for(unsigned int i = 0; i < commandVec.size(); i++) {
-            temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
+    public:
+        //Contructor to take in vector and set it to commands vectors
+        Command(vector<string>s){
+            commandVec = s;
         }
-        temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
-        char** arrChar = &temp2[0];
-        
-        
-        //here we will use fork() so we can do multiple process at once
-        int status;
-        pid_t pid = fork();
-        if (pid < 0) { //to chck if fork failed
-            perror("FAILED");
-            exit(1);
-        }
-        else if (pid == 0) {
-            //if it reaches here, you can pass into execvp
-            //execvp will do all the work for you
-            execvp(const_cast<char *>(arrChar[0]), arrChar);
-            //if it reaches here there is some error
-            exit(127); // exit 127 "command not found"
-        }
-        else if(pid > 0){
-            //have to wait until child finishes
-            // use wait pid or wait ???? waitpid(pid, &status, 0);
-            wait(&status);
-            if(wait(&status) != -1){
-                perror("ERROR: wait");
+        bool evaluate(){   
+            //exit if cmd is "exit"
+            if(commandVec[0] == "exit") {
+                //Program stops if input is "exit" - Ammar
+                exit(0);
             }
-            if(WIFEXITED(status)){
-                if(WEXITSTATUS(status) == 0) {
-                    
+            //this chunk is to format the vector in the way we want it
+            vector<char *> temp2;
+            for(unsigned int i = 0; i < commandVec.size(); i++) {
+                temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
+            }
+            temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
+            char** arrChar = &temp2[0];
+            //here we will use fork() so we can do multiple process at once
+            int status;
+            pid_t pid = fork();
+            if (pid < 0) { //to chck if fork failed
+                perror("FAILED");
+                exit(1);
+            }
+            else if (pid == 0) {
+                //if it reaches here, you can pass into execvp
+                //execvp will do all the work for you
+                execvp(const_cast<char *>(arrChar[0]), arrChar);
+                //if it reaches here there is some error
+                exit(127); // exit 127 "command not found"
+            }
+            else if(pid > 0){
+                //have to wait until child finishes
+                // use wait pid or wait ???? waitpid(pid, &status, 0);
+                wait(&status);
+                if(wait(&status) != -1){
+                    perror("ERROR: wait");
+                }
+                if(WIFEXITED(status)){
+                    if(WEXITSTATUS(status) == 0) {  
                     //program is succesful
                     return true;
+                    }
+                    else {
+                    
+                        //this return is false, then the program failed but exiting was normal
+                        return false;
+                    }
                 }
                 else {
-                    
-                    //this return is false, then the program failed but exiting was normal
+                    //the program messed up and exited abnormally
+                    perror("EXIT: ABNORMAL CHILD");
                     return false;
                 }
             }
-            else{
-                
-                //the program messed up and exited abnormally
-                perror("EXIT: ABNORMAL CHILD");
-                return false;
-            }
+            return false;
         }
-        return false;
-    }
 };
 
 class Connectors : public Base {
@@ -145,9 +139,6 @@ public:
     }
 };
 
-//class Test : public Command {
-
-
 //This Function takes the user input and parses it returns us a vector of strings - Ammar
 vector<string> parser(string toSplit, const char* delimiters) {
     char* toTokenize = new char[toSplit.size() + 1];
@@ -167,10 +158,9 @@ vector<string> parser(string toSplit, const char* delimiters) {
 }
 
 //template function to print a vector
-template <typename T>
-void printVec(vector<T> &v) {
-    for (int i = 0; i < v.size(); ++i) {
-        cout << v.at(i) << " ";
+void printVec(vector<string> &v) {
+    for (unsigned int i = 0; i < v.size(); ++i) {
+        cout << v.at(i) << endl;
     }
     cout << endl;
 }
@@ -193,7 +183,7 @@ int main () {
         getline(cin, commandInput);
 
         //print the input
-        cout << "Input string: " << commandInput << endl;
+        //cout << "Input string: " << commandInput << endl;
         // Gets rid of leading and ending uneeded space - Ammar
         trim(commandInput);
         bool blank = false;
@@ -220,19 +210,19 @@ int main () {
                 }
             }
             //print connectors
-            cout << "elements of \"connectors\" vector: "; printVec(connectors);
+            //cout << "elements of \"connectors\" vector: "; printVec(connectors);
 
             //parses inputs of multiple commands
             vector<string> myCommands = parser(inputCommand, "||&&;");
             //print myCommands
-            cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
-
+            //cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
+            Base* firstCommand;
+            bool temp2;
             vector<string> command1 = parser(myCommands.at(0), " ");
             //print command1
-            cout << "elements of \"command1\" vector: "; printVec(command1);
-            Base* firstCommand = new Command(command1);
-            bool temp2 = firstCommand->evaluate(); //run first command and see if fail or succesful
-            
+            //cout << "elements of \"command1\" vector: "; printVec(command1);
+            firstCommand = new Command(command1);
+            temp2 = firstCommand->evaluate();
             //here we have to make desicions base on the temp2 = true or false    
             for(unsigned int i = 0; i < connectors.size(); i ++){
                 
@@ -240,7 +230,7 @@ int main () {
                 //this will make a comand ready for the execvp funct
                 vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
                 //print CommandReady
-                cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
+                //cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
                 if (connectors.at(i) == "&&") { //for and
                     NxtCommand = new And(temp2, new Command(CommandReady));
                 }

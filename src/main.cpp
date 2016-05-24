@@ -75,8 +75,19 @@ class Test : public Base {
                             return false;
                         }
                     }
+                    else if (vec[0] == "-d") {
+                        if (S_ISDIR(buf.st_mode) != 0) {
+                            cout << "(True)" << endl;
+                            return true;
+                        }
+                        else {
+                            cout << "(False)" << endl;
+                            return false;
+                        }
+                    }
                 }
             }
+            cout << "(False)" << endl;
             return false;
         }
 };
@@ -214,7 +225,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
     return returnThis;
 }
 
-//template function to print a vector
+//function to print a vector
 void printVec(vector<string> &v) {
     for (unsigned int i = 0; i < v.size(); ++i) {
         cout << v.at(i) << endl;
@@ -293,20 +304,48 @@ int main () {
             for(unsigned int i = 0; i < connectors.size(); i ++){
                 
                 Base* NxtCommand;
+                Base* NxtTest;
+                bool runningTest;
                 //this will make a comand ready for the execvp funct
                 vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
                 //print CommandReady
                 //cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
                 if (connectors.at(i) == "&&") { //for and
-                    NxtCommand = new And(temp2, new Command(CommandReady));
+                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                        NxtTest = new And(temp2, new Test(CommandReady));
+                        runningTest = true;
+                    }
+                    else {
+                        NxtCommand = new And(temp2, new Command(CommandReady));
+                        runningTest = false;
+                    }
                 }
-                else if (connectors.at(i) == "||") { //for or 
-                    NxtCommand = new Or(temp2, new Command(CommandReady));
+                else if (connectors.at(i) == "||") { //for or
+                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                        NxtTest = new Or(temp2, new Test(CommandReady));
+                        runningTest = true;
+                    }
+                    else {
+                        NxtCommand = new Or(temp2, new Command(CommandReady));
+                        runningTest = false;
+                    }
                 }
                 else if (connectors.at(i) == ";") {//for semicolon
-                    NxtCommand = new Semicolon(temp2, new Command(CommandReady));                    
+                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                        NxtTest = new Semicolon(temp2, new Test(CommandReady));
+                        runningTest = true;
+                    }
+                    else {
+                        NxtCommand = new Semicolon(temp2, new Command(CommandReady));
+                        runningTest = false;
+                    }
                 }
-                NxtCommand->evaluate();
+                if (runningTest) {
+                    NxtTest->evaluate();
+                }
+                else {
+                    NxtCommand->evaluate();
+                }
             }
             blank = true; //this means done with this command and wants next one
         }

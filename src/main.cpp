@@ -24,8 +24,65 @@ public:
     virtual bool evaluate() = 0;
 };
 
+class Test : public Base {
+    private:
+        vector<string> vec;
+
+    public:
+        Test(vector<string> v) {
+            vec = v;
+        }
+        bool evaluate() {
+            if (vec[0] == "test") {
+                vec.erase(vec.begin());
+            }
+            else {
+                vec.erase(vec.begin());
+                vec.erase(vec.end());
+            }
+            //first check if file exists
+            struct stat buf;
+            bool exists;
+            string path = vec.at(vec.size() - 1);
+            if (stat(path.c_str(), &buf) == 0) {
+                exists = true;
+            }
+            else {
+                exists = false;
+            }
+            if (!exists) {
+                cout << "(False)" << endl; 
+                return false;
+            }
+            if (exists) {
+                vec.erase(vec.end());
+                if (vec.size() == 0) {
+                    cout << "(True)" << endl; 
+                    return true;
+                }
+                else {
+                    if (vec[0] == "-e") {
+                        cout << "(True)" << endl;
+                        return true;
+                    }
+                    else if (vec[0] == "-f") {
+                        if (S_ISREG(buf.st_mode) != 0) {
+                            cout << "(True)" << endl;
+                            return true;
+                        }
+                        else {
+                            cout << "(False)" << endl;
+                            return false;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+};
+
 // Command Class that each command will inherit from - Ammar
-class Command: public Base {
+class Command : public Base {
     private: 
         //Vector of commands - Ammar
         vector<string> commandVec;
@@ -217,12 +274,21 @@ int main () {
             //print myCommands
             //cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
             Base* firstCommand;
+            Base* firstTest;
             bool temp2;
             vector<string> command1 = parser(myCommands.at(0), " ");
             //print command1
             //cout << "elements of \"command1\" vector: "; printVec(command1);
-            firstCommand = new Command(command1);
-            temp2 = firstCommand->evaluate();
+            if ((command1[0] == "test") || (command1[0] == "[")) {
+                //run test
+                firstTest = new Test(command1);
+                temp2 = firstTest->evaluate();
+            }
+            else {
+                //run command
+                firstCommand = new Command(command1);
+                temp2 = firstCommand->evaluate();
+            }
             //here we have to make desicions base on the temp2 = true or false    
             for(unsigned int i = 0; i < connectors.size(); i ++){
                 

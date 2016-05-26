@@ -233,121 +233,131 @@ void printVec(vector<string> &v) {
     cout << endl;
 }
 
+class Line : public Base {
+    private:
+        string line;
+
+    public:
+        Line(string l) {
+            line = l;
+        }
+        bool evaluate() {
+            bool returnThis;
+            bool blank = false;
+            if(line == ""){
+                blank = true;
+            }
+            while(blank == false){
+                string inputCommand = line.substr(0, line.find('#', 1));        
+                vector<string> connectors;
+                //filling vector of connectors
+                for(unsigned int i = 0; i < inputCommand.length(); i++){
+                    if(inputCommand[i] == '|'){
+                        if(inputCommand[i + 1] == '|'){
+                            connectors.push_back("||");        
+                        }    
+                    }
+                    else if(inputCommand[i] == '&'){
+                        if(inputCommand[i + 1] == '&'){
+                            connectors.push_back("&&");
+                        }
+                    }
+                    else if(inputCommand[i] == ';'){
+                        connectors.push_back(";");
+                    }
+                }
+                //print connectors
+                //cout << "elements of \"connectors\" vector: "; printVec(connectors);
+                //parses inputs of multiple commands
+                vector<string> myCommands = parser(inputCommand, "||&&;");
+                //print myCommands
+                //cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
+                Base* firstCommand;
+                Base* firstTest;
+                vector<string> command1 = parser(myCommands.at(0), " ");
+                //print command1
+                //cout << "elements of \"command1\" vector: "; printVec(command1);
+                if ((command1[0] == "test") || (command1[0] == "[")) {
+                    //run test
+                    firstTest = new Test(command1);
+                    returnThis = firstTest->evaluate();
+                }
+                else {
+                    //run command
+                    firstCommand = new Command(command1);
+                    returnThis = firstCommand->evaluate();
+                }
+                //here we have to make desicions base on the temp2 = true or false    
+                for(unsigned int i = 0; i < connectors.size(); i ++){
+                    Base* NxtCommand;
+                    Base* NxtTest;
+                    bool runningTest;
+                    //this will make a comand ready for the execvp funct
+                    vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
+                    //print CommandReady
+                    //cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
+                    if (connectors.at(i) == "&&") { //for and
+                        if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                            NxtTest = new And(returnThis, new Test(CommandReady));
+                            runningTest = true;
+                        }
+                        else {
+                            NxtCommand = new And(returnThis, new Command(CommandReady));
+                            runningTest = false;
+                        }
+                    }
+                    else if (connectors.at(i) == "||") { //for or
+                        if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                            NxtTest = new Or(returnThis, new Test(CommandReady));
+                            runningTest = true;
+                        }
+                        else {
+                            NxtCommand = new Or(returnThis, new Command(CommandReady));
+                            runningTest = false;
+                        }
+                    }
+                    else if (connectors.at(i) == ";") {//for semicolon
+                        if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
+                            NxtTest = new Semicolon(returnThis, new Test(CommandReady));
+                            runningTest = true;
+                        }
+                        else {
+                            NxtCommand = new Semicolon(returnThis, new Command(CommandReady));
+                            runningTest = false;
+                        }
+                    }
+                    if (runningTest) {
+                        returnThis = NxtTest->evaluate();
+                    }
+                    else {
+                        returnThis = NxtCommand->evaluate();
+                    }
+                }
+                blank = true; //this means done with this command and wants next one
+            }
+            return returnThis;
+        }
+};
+
 int main () {
     
-    //take user input
     string commandInput = "";
     
-    while (true) { //Keep checking until exit is found
-        //this is the extra credit part
+    Base* theLine;
+    while (true) {
         string login = getlogin();
         char hostname[100];
         gethostname(hostname, 100);
-        
-        //display login and host name and waits for user input
-        
         cout << "[" << login << "@" << hostname << "] $ ";
-        
         getline(cin, commandInput);
-
-        //print the input
-        //cout << "Input string: " << commandInput << endl;
-        // Gets rid of leading and ending uneeded space - Ammar
         trim(commandInput);
-        bool blank = false;
-        if(commandInput == ""){
-            blank = true;
+        theLine = new Line(commandInput);
+        if ((commandInput.find("(") != string::npos) && (commandInput.find(")") != string::npos)) {
+            //there is precedence
+            cout << "This input uses precedence" << endl;
         }
-        while(blank == false){
-            string inputCommand = commandInput.substr(0, commandInput.find('#', 1));        
-            vector<string> connectors;
-            //filling vector of connectors
-            for(unsigned int i = 0; i < inputCommand.length(); i++){
-                if(inputCommand[i] == '|'){
-                    if(inputCommand[i + 1] == '|'){
-                        connectors.push_back("||");        
-                    } 
-                }
-                else if(inputCommand[i] == '&'){
-                    if(inputCommand[i + 1] == '&'){
-                        connectors.push_back("&&");
-                    }
-                }
-                else if(inputCommand[i] == ';'){
-                    connectors.push_back(";");
-                }
-            }
-            //print connectors
-            //cout << "elements of \"connectors\" vector: "; printVec(connectors);
-
-            //parses inputs of multiple commands
-            vector<string> myCommands = parser(inputCommand, "||&&;");
-            //print myCommands
-            //cout << "elements of \"myCommands\" vector: "; printVec(myCommands);
-            Base* firstCommand;
-            Base* firstTest;
-            bool temp2;
-            vector<string> command1 = parser(myCommands.at(0), " ");
-            //print command1
-            //cout << "elements of \"command1\" vector: "; printVec(command1);
-            if ((command1[0] == "test") || (command1[0] == "[")) {
-                //run test
-                firstTest = new Test(command1);
-                temp2 = firstTest->evaluate();
-            }
-            else {
-                //run command
-                firstCommand = new Command(command1);
-                temp2 = firstCommand->evaluate();
-            }
-            //here we have to make desicions base on the temp2 = true or false    
-            for(unsigned int i = 0; i < connectors.size(); i ++){
-                
-                Base* NxtCommand;
-                Base* NxtTest;
-                bool runningTest;
-                //this will make a comand ready for the execvp funct
-                vector<string> CommandReady = parser(myCommands.at(i + 1), " ");
-                //print CommandReady
-                //cout << "elements of \"CommandReady\" vector: "; printVec(CommandReady);
-                if (connectors.at(i) == "&&") { //for and
-                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
-                        NxtTest = new And(temp2, new Test(CommandReady));
-                        runningTest = true;
-                    }
-                    else {
-                        NxtCommand = new And(temp2, new Command(CommandReady));
-                        runningTest = false;
-                    }
-                }
-                else if (connectors.at(i) == "||") { //for or
-                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
-                        NxtTest = new Or(temp2, new Test(CommandReady));
-                        runningTest = true;
-                    }
-                    else {
-                        NxtCommand = new Or(temp2, new Command(CommandReady));
-                        runningTest = false;
-                    }
-                }
-                else if (connectors.at(i) == ";") {//for semicolon
-                    if ((CommandReady[0] == "test") || (CommandReady[0] == "[")) {
-                        NxtTest = new Semicolon(temp2, new Test(CommandReady));
-                        runningTest = true;
-                    }
-                    else {
-                        NxtCommand = new Semicolon(temp2, new Command(CommandReady));
-                        runningTest = false;
-                    }
-                }
-                if (runningTest) {
-                    NxtTest->evaluate();
-                }
-                else {
-                    NxtCommand->evaluate();
-                }
-            }
-            blank = true; //this means done with this command and wants next one
+        else {
+            theLine->evaluate();
         }
     }
     return 0;

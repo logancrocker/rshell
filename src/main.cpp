@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stack>
 #include <string.h>
 #include <netdb.h>
 #include <pwd.h>

@@ -1,5 +1,9 @@
 #include <iostream>
+#include <algorithm>
 #include <sstream>
+#include <cctype>
+#include <clocale>
+#include <string>
 #include <vector>
 #include <list>
 #include <stdio.h>
@@ -355,73 +359,72 @@ void printVec(vector<string> &v) {
     cout << endl;
 }
 
+void clearAllParens(string &v) {
+    char openP = '(';
+    char closeP = ')';
+    v.erase(remove(v.begin(), v.end(), openP), v.end());
+    v.erase(remove(v.begin(), v.end(), closeP), v.end());        
+}
+
 bool isAConnector(string str) {
-    if ((str != "&&") && (str != "||") && (str != ";")) {
-        return false;
-    }
-    else {
-        return true;
-    }
+    if (str == "&&") return true;
+    if (str == "||") return true;
+    if (str == ";") return true;
+    else return false;
 }
 
 void infix2postfix(vector<string> &infix, vector<string> &postfix) {
-    stack<string> s;
-    //int weight;
-    unsigned int i = 0;
-    string str;
-    string command;
-    while (i < infix.size()) {
-        str = infix.at(i);
-        if (str == "(") {
-            s.push("(");
-            i++;
-            continue;
-        }
-        if (str == ")") {
-            while (!s.empty() && s.top() != "(") {
-                postfix.push_back(s.top());
-                s.pop();
+    stack<char> s;
+    string current;
+    char openP = '(';
+    char closeP = '(';
+    string aline = "";
+    string connector = "";
+    for (unsigned int i = 0; i < infix.size(); ++i) {
+        for (unsigned int k = 0; k < infix.at(i).size(); ++i) {
+            if (isalpha(infix[i][k]) || infix[i][k] == '-' || infix[i][k] == ' ') {
+                aline += infix[i][k];
             }
-            if (!s.empty()) {
-                s.pop();
+            else if (infix[i][k] == openP) {
+                s.push(infix[i][k]);
             }
-            i++;
-            continue;
-        }
-        if (!isAConnector(str)) {
-            while (!isAConnector(str)) {
-                command += str;
-                command += ' ';
-                i++;
-            }
-            postfix.push_back(command);
-            command = "";
-            i++;
-        }
-        else {
-            if (s.empty()) {
-                s.push(str);
+            else if (infix[i][k] == closeP) {
+                infix.push_back(aline);
+                aline = "";
+                while (!s.empty()) {
+                    if (s.top() == openP) {
+                        s.pop();
+                        break;
+                    }
+                    else {
+                        if (s.top() == ';') {
+                            connector += s.top();
+                            infix.push_back(connector);
+                        }
+                        else if (s.top() == '|' || s.top() == '&') {
+                            connector += s.top();
+                            s.pop();
+                            connector += s.top();
+                            s.pop();
+                            infix.push_back(connector);
+                            connector = "";
+                        }
+                    }
+                }
             }
             else {
-                while (!s.empty() && s.top() != "(") {
-                    postfix.push_back(s.top());
-                    s.pop();
-                }
-                s.push(str);
+                s.push(infix[i][k]);
             }
         }
-        i++;
     }
-    while (!s.empty()) {
-        postfix.push_back(s.top());
-        s.pop();
-    }
+            
 }
 
 int main () {
     
     string commandInput = "";
-    
+    string formattedInput;
+    vector<string> v;
     Base* theLine;
     while (true) {
         string login = getlogin();
@@ -431,50 +434,38 @@ int main () {
         getline(cin, commandInput);
         trim(commandInput);
         theLine = new Line(commandInput);
+        vector<string> parsedVector;
         if ((commandInput.find("(") != string::npos) && (commandInput.find(")") != string::npos)) {
             //there is precedence
-            cout << "This input uses precedence" << endl;
-            vector<string> tokens = split(commandInput, ' ');
-            printVec(tokens);
-            vector<string> parsedVector;
-            string temp;
-            vector<string> postfix;
-            for (unsigned int i = 0; i < tokens.size(); ++i) {
-                temp = tokens.at(i);
-                if (tokens.at(i).at(0) == '(') {
-                    //cout << tokens.at(i) << endl;
-                    temp = temp.substr(1, temp.size() - 1);
-                    //cout << temp << endl;
-                    parsedVector.push_back("(");
-                    parsedVector.push_back(temp);
-                    //cout << "Iteration " << i + 1 << " "; printVec(parsedVector); 
-                }
-                else if (tokens.at(i).at(tokens.at(i).size() - 1) == ';') {
-                    if (temp.at(temp.size() - 2) == ')')  {
-                        temp = temp.substr(0, temp.size() - 2);
-                        parsedVector.push_back(temp);
-                        parsedVector.push_back(")");
-                        parsedVector.push_back(";");
-                    }
-                    else {
-                        temp = temp.substr(0, temp.size() - 1);
-                        parsedVector.push_back(temp);
-                        parsedVector.push_back(";");
+            string command;
+            for (unsigned int i = 0; i < commandInput.size(); ++i) {
+                if (commandInput.at(i) == '&' && i != commandInput.size() - 1) {
+                    if (commandInput.at(i + 1) == '&') {
+                        parsedVector.push_back(command);
+                        command = "";
+                        parsedVector.push_back("&&");
                     }
                 }
-                else if (temp.at(temp.size() - 1) == ')') {
-                    temp = temp.substr(0, temp.size() - 1);
-                    parsedVector.push_back(temp);
-                    parsedVector.push_back(")");
+                else if (commandInput.at(i) == '|' && i != commandInput.size() - 1) {
+                    if (commandInput.at(i + 1) == '|') {
+                        parsedVector.push_back(command);
+                        command = "";
+                        parsedVector.push_back("||");
+                    }
+                }
+                else if (commandInput.at(i) == ';') {
+                    parsedVector.push_back(command);
+                    command = "";
+                    parsedVector.push_back(";");
                 }
                 else {
-                    parsedVector.push_back(tokens.at(i));
-                    //cout << "Iteration " << i + 1 << " "; printVec(parsedVector); 
+                    command += commandInput.at(i);
                 }
             }
             printVec(parsedVector);
-            infix2postfix(parsedVector, postfix);
-            printVec(postfix);
+            vector<string> postfix;
+            //infix2postfix(parsedVector, postfix);
+            //printVec(postfix);
         }
         else {
             theLine->evaluate();

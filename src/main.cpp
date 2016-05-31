@@ -426,7 +426,74 @@ class Chunks:public Base{
                                       
                                    
                                   }
-    
+      else if(!isNested){
+                                      int ind_one;
+                                      int ind_two;
+                                      
+                                      if(commandInput.find('[') != string::npos){
+                                          ind_one = commandInput.find('[');
+                                          if(commandInput.find(']')){
+                                              ind_two = commandInput.find(']');
+                                          }
+                                          else{
+                                              cout << "Not closed"<< endl;
+                                              exit(0);
+                                              
+                                          }
+                                          commandInput.erase(ind_one,1);
+                                          commandInput.erase(ind_two-1,1);
+                                          commandInput.insert(0, "test ");
+                                
+                                      }
+                                      
+                                      vector<string> ConVec;
+                                      for(unsigned l=0; l< commandInput.length();l++){
+                                          if(commandInput[l]=='&'){
+                                              if(commandInput[l+1]=='&'){
+                                                  ConVec.push_back("&&");
+                                              }
+                                          }
+                                          else if(commandInput[l]=='|'){
+                                              if(commandInput[l+1]=='|'){
+                                                  ConVec.push_back("||");
+                                              }
+                                          }
+                                          else if(commandInput[l]==';'){
+                                                  ConVec.push_back(";");
+                                              
+                                          }
+                                      }
+                                      
+                                      vector<string> commands= parser(commandInput, "||&&;");
+                                      vector<string> begincommands = parser(commands.at(0), " ");
+                                      Base* first = new Command(begincommands);
+                                      bool g = first->evaluate();
+                                      track.push_back(g);
+                                      
+                                      
+                                      for (unsigned i = 0; i < ConVec.size(); i ++) {
+                                          Base* next;
+                                          vector<string> args = parser(commands.at(i + 1), " ");
+                                          if (ConVec.at(i) == "&&") {
+                                              next = new And(g, new Command(args));
+                                          }
+                                          else if (ConVec.at(i) == "||") {
+                                              next = new Or(g, new Command(args));
+                                          }
+                                          else if (ConVec.at(i) == ";") {
+                                              next = new Semicolon(g, new Command(args));
+                                          }
+                                          bool cNext = next->evaluate();
+                                          track.push_back(cNext);
+                                      }
+                                      
+                                      for (unsigned int f = 0; f < track.size(); f++) {
+                                          if (track[f] == 1) {
+                                              return 1;
+                                          }
+                                      }
+                                      return 0;
+                                  }
     
 }
 

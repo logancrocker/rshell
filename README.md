@@ -14,16 +14,22 @@ The program now takes in parenthesis, so anything within them will be executed a
 Known Bugs/Limitations
 -----------------------
 The cd command does not work
-To use the OR and AND connectors, you must enter "||" or "&&" respectively. "|" or "&" will not work.
-Incorrect parenthesis do not work like )Something()((
 
+To use the OR and AND connectors, you must enter "||" or "&&" respectively. "|" or "&" will not work.
+
+Incorrect parenthesis do not work like )Something()((
 
 -----------------------
 Installation
 -----------------------
 To run rshell, run the following commands:
+
 git clone https://github.com/logancrocker/rshell.git
+
 cd rshell
+
 git checkout hw2
+
 make
+
 bin/rshell

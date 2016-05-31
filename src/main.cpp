@@ -110,61 +110,80 @@ public:
     bool evaluate(){
         
         //exit if cmd is "exit"
-        if(commandVec[0] == "exit")
+        if(commandVec[0] == "exit") {
             //Program stops if input is "exit" - Ammar
             exit(0);
-        
-        //this chunk is to format the vector in the way we want it
-        vector<char *> temp2;
-        for(unsigned int i = 0; i < commandVec.size(); i++) {
-            temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
         }
+
+        else if (commandVec[0] == "test") {
+            commandVec.erase(commandVec.begin());
+            if (commandVec.empty() || (commandVec.size() == 1 && (commandVec[0] == "-e" || commandVec[0] == "-f" || commandVec[0] == "-d"))) {
+                cout << "no file passed, exiting..." << endl;
+                exit(0);
+            }
+            Test* testCommand = new Test(commandVec);
+            if (testCommand->found) {
+                cout << "(true)" << endl;
+                return true;
+            }
+            else {
+                    cout << "(false)" << endl;
+                    return false;
+            }
+        }        
+        else {
+            //this chunk is to format the vector in the way we want it
+            vector<char *> temp2;
+            for(unsigned int i = 0; i < commandVec.size(); i++) {
+                temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
+            }
         
-        temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
-        char** arrChar = &temp2[0];
+            temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
+            char** arrChar = &temp2[0];
         
         
         //here we will use fork() so we can do multiple process at once
-        int status;
-        pid_t pid = fork();
-        if (pid < 0) { //to chck if fork failed
-            perror("FAILED");
-            exit(1);
-        }
-        else if (pid == 0) {
-            //if it reaches here, you can pass into execvp
-            //execvp will do all the work for you
-            execvp(const_cast<char *>(arrChar[0]), arrChar);
-            //if it reaches here there is some error
-            exit(127); // exit 127 "command not found"
-        }
-        else if(pid > 0){
-            //have to wait until child finishes
-            // use wait pid or wait ???? waitpid(pid, &status, 0);
-            wait(&status);
-            if(wait(&status) != -1){
-                perror("ERROR: wait");
+            int status;
+            pid_t pid = fork();
+            if (pid < 0) { //to chck if fork failed
+                perror("FAILED");
+                exit(1);
             }
-            if(WIFEXITED(status)){
-                if(WEXITSTATUS(status) == 0) {
-                    
-                    //program is succesful
-                    return true;
+            else if (pid == 0) {
+                //if it reaches here, you can pass into execvp
+                //execvp will do all the work for you
+                execvp(const_cast<char *>(arrChar[0]), arrChar);
+                //if it reaches here there is some error
+                exit(127); // exit 127 "command not found"
+            }
+            else if(pid > 0){
+                //have to wait until child finishes
+                // use wait pid or wait ???? waitpid(pid, &status, 0);
+                wait(&status);
+                if(wait(&status) != -1){
+                    perror("ERROR: wait");
                 }
-                else {
+                if(WIFEXITED(status)){
+                    if(WEXITSTATUS(status) == 0) {
                     
-                    //this return is false, then the program failed but exiting was normal
+                        //program is succesful
+                        return true;
+                    }
+                    else {
+                    
+                        //this return is false, then the program failed but exiting was normal
+                        return false;
+                    }
+                }
+                else{
+                
+                    //the program messed up and exited abnormally
+                    perror("EXIT: ABNORMAL CHILD");
                     return false;
                 }
             }
-            else{
-                
-                //the program messed up and exited abnormally
-                perror("EXIT: ABNORMAL CHILD");
-                return false;
-            }
         }
-        return false;
+            return false;
     }
 };
 

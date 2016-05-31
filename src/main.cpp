@@ -58,7 +58,7 @@ public:
         char** charVec_two = &charVec[0];
                           struct stat statStruct;
                           
-                          if(stat(const_cast<char *>(charVec[0]), &statStruct)<0){
+                          if(stat(const_cast<char *>(charVec_two[0]), &statStruct)<0){
                               found = false;
                           }
                           else{
@@ -294,7 +294,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                           void perCheck(string commandInput){
                               stack<char> charStack;
                               
-                              for(int i =0; i < commandInput.size();i++)
+                              for(unsigned int i =0; i < commandInput.size();i++)
                               {
                                   if(commandInput.at(i)== '('){
                                       charStack.push('(');
@@ -335,7 +335,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       return 1;
                                   }
                                   isNested = 0;
-                                  for(int i =0;i<commandInput.size();i++){
+                                  for(unsigned int i =0;i<commandInput.size();i++){
                                       if(commandInput.at(i)=='('){
                                           isNested =true;
                                       }
@@ -349,7 +349,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       unsigned end;
                                       string chuncksPush;
                                       
-                                      for(int i =0;i < commandInput.size();){
+                                      for(unsigned int i =0;i < commandInput.size();){
                                           if(commandInput.at(i)=='('){
                                               begin =i;
                                               end = perEnds(commandInput, i);
@@ -417,7 +417,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       bool boolean = firstChunck->evaluate();
                                       track.push_back(boolean);
                                       
-                                      for(int j =0; j < VecConnect.size(); j++){
+                                      for(unsigned int j =0; j < VecConnect.size(); j++){
                                           Base* nextChunk;
                                           if(VecConnect[j]  == "&&"){
                                               nextChunk = new And(boolean, new Chunks(chunksVec[j+1]));
@@ -432,7 +432,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                           track.push_back(nextC);
                                           
                                       }
-                                      for(int k=0; k< track.size();k++){
+                                      for(unsigned int k=0; k< track.size();k++){
                                           if(track.at(k)==1){
                                               return 1;
                                           }

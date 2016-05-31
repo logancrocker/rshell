@@ -13,9 +13,9 @@ The program now takes in parenthesis, so anything within them will be executed a
 -----------------------
 Known Bugs/Limitations
 -----------------------
-->The cd command does not work
-->To use the OR and AND connectors, you must enter "||" or "&&" respectively. "|" or "&" will not work.
--> Incorrect parenthesis do not work like )Something()((
+The cd command does not work
+To use the OR and AND connectors, you must enter "||" or "&&" respectively. "|" or "&" will not work.
+Incorrect parenthesis do not work like )Something()((
 
 
 -----------------------

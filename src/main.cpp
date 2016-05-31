@@ -310,7 +310,17 @@ class Chunks:public Base{
                            bool evaluate()
                               {
                                   
-                                  
+                                   trim(commandInput);
+                                  commandInput = parsePer(commandInput);
+                                  if(commandInput == ""){
+                                      return 1;
+                                  }
+                                  isNested = 0;
+                                  for(int i =0;i<commandInput.size();i++){
+                                      if(commandInput.at(i)=='('){
+                                          isNested =1;
+                                      }
+                                  }
                                   
                                return 0;   
                               }

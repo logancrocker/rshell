@@ -221,6 +221,84 @@ vector<string> parser(string toSplit, const char* delimiters) {
     return returnThis;
 }
 
+  unsigned perEnds(string commandInput, int a){
+                              stack<char> charStack;
+                              int i =a;
+                              charStack.push('f');
+                              
+                              i++;
+                              for(int i=0; i < commandInput.size(); i++)
+                              {
+                                  if(commandInput.at(i)== '('){
+                                      charStack.push('(');
+                                  }
+                                  else if(commandInput.at(i) == ')'){
+                                      char open = charStack.top();
+                                      charStack.pop();
+                                      if(charStack.empty() && open =='f')
+                                      {
+                                          return i;
+                                      }
+                                  }
+                              }
+                              return i;
+                          }
+                          
+                          string parsePer(string commandInput){
+                              stack<char> charStack;
+                              bool isBool = 0;
+                              do{
+                                  trim(commandInput);
+                                  
+                                  if(commandInput.find('(') !=0){
+                                      return commandInput;
+                                  }
+                                  else if(perEnds(commandInput, 0) == commandInput.size()-1){
+                                      commandInput.erase(0,1);
+                                      commandInput.erase(commandInput.size()-1);
+                                      if(perEnds(commandInput, 0)== commandInput.size()-1){
+                                          isBool = 1;
+                                      }
+                                      else{
+                                          return commandInput;
+                                      }
+                                
+                                  }
+                                  
+                              
+                              else{
+                                  return commandInput;
+                              }
+                              }
+                              while(isBool == 1);
+                              return commandInput;
+                          }
+                          
+                          
+                          void perCheck(string commandInput){
+                              stack<char> charStack;
+                              
+                              for(int i =0; i < commandInput.size();i++)
+                              {
+                                  if(commandInput.at(i)== '('){
+                                      charStack.push('(');
+                                  }
+                                  else if(commandInput.at(i)== ')'){
+                                      if(!charStack.empty()){
+                                          charStack.pop();
+                                      }
+                                      else{
+                                          cout << "Error";
+                                          
+                                          exit(0);
+                                      }
+                                  }
+                              }
+                              if(!charStack.empty()){
+                                  cout << "Error";
+                                  exit(0);
+                              }
+                          }
 
 int main () {
     

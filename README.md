@@ -19,9 +19,7 @@ To use the OR and AND connectors, you must enter "||" or "&&" respectively. "|" 
 
 Incorrect parenthesis do not work like )Something()((
 
-Trying to echo anything with a semicolon will cut off everything after the semi colon, even with quotation marks
-
-    i.e. echo "semi;colon" will output "semi
+Trying to echo anything with a semicolon will cut off everything after the semi colon, even with quotation marks, i.e. echo "semi;colon" will output "semi
 	
 Quotation marks are not implemented so echo "Hello world" will output "Hello world" (with quotations)
 

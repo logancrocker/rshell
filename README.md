@@ -28,7 +28,7 @@ git clone https://github.com/logancrocker/rshell.git
 
 cd rshell
 
-git checkout hw2
+git checkout hw3
 
 make
 

@@ -300,17 +300,19 @@ vector<string> parser(string toSplit, const char* delimiters) {
                               }
                           }
 
-class Chunks:public Base{
-  private:
+                   class Chunks:public Base{
+                          private:
                               string commandInput;
                               vector<bool> track;
                               bool isNested;
-                          public:  
-                          
-                           bool evaluate()
+                          public:
+                              Chunks(string s){
+                                  commandInput =s;
+                              }
+                              
+                              bool evaluate()
                               {
-                                  
-                                   trim(commandInput);
+                                  trim(commandInput);
                                   commandInput = parsePer(commandInput);
                                   if(commandInput == ""){
                                       return 1;
@@ -321,10 +323,7 @@ class Chunks:public Base{
                                           isNested =1;
                                       }
                                   }
-                                  
-                               return 0;   
-                              }
-                                       if(isNested)
+                                  if(isNested)
                                   {
                                       vector<string> VecConnect;
                                       vector<string> chunksVec;
@@ -426,7 +425,7 @@ class Chunks:public Base{
                                       
                                    
                                   }
-      else if(!isNested){
+                                  else if(!isNested){
                                       int ind_one;
                                       int ind_two;
                                       
@@ -494,8 +493,9 @@ class Chunks:public Base{
                                       }
                                       return 0;
                                   }
-    
-}
+                                  return 0;
+                              }
+                          };
 
 
 int main () {

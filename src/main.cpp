@@ -30,73 +30,63 @@ public:
     virtual bool evaluate() = 0;
 };
 
-class Test : public Base {
-    private:
-        vector<string> vec;
 
-    public:
-        Test(vector<string> v) {
-            vec = v;
+class Test{
+private:
+    int flagNum;
+public:
+    // filetype found
+    bool found;
+    
+    // format args
+    Test(vector<string> argsTest){
+        if (argsTest[0] =="-e") {
+            argsTest.erase(argsTest.begin());
+            flagNum =1;
         }
-        bool evaluate() {
-            if (vec[0] == "test") {
-                vec.erase(vec.begin());
-            }
-            else {
-                vec.erase(vec.begin());
-                vec.erase(vec.end());
-            }
-            //first check if file exists
-            struct stat buf;
-            bool exists;
-            string path = vec.at(vec.size() - 1);
-            if (stat(path.c_str(), &buf) == 0) {
-                exists = true;
-            }
-            else {
-                exists = false;
-            }
-            if (!exists) {
-                cout << "(False)" << endl; 
-                return false;
-            }
-            if (exists) {
-                vec.erase(vec.end());
-                if (vec.size() == 0) {
-                    cout << "(True)" << endl; 
-                    return true;
-                }
-                else {
-                    if (vec[0] == "-e") {
-                        cout << "(True)" << endl;
-                        return true;
-                    }
-                    else if (vec[0] == "-f") {
-                        if (S_ISREG(buf.st_mode) != 0) {
-                            cout << "(True)" << endl;
-                            return true;
-                        }
-                        else {
-                            cout << "(False)" << endl;
-                            return false;
-                        }
-                    }
-                    else if (vec[0] == "-d") {
-                        if (S_ISDIR(buf.st_mode) != 0) {
-                            cout << "(True)" << endl;
-                            return true;
-                        }
-                        else {
-                            cout << "(False)" << endl;
-                            return false;
-                        }
-                    }
-                }
-            }
-            cout << "(False)" << endl;
-            return false;
+        else if (argsTest[0] =="-f") {
+            argsTest.erase(argsTest.begin());
+            flagNum =2;
         }
+        else if (argsTest[0] =="-d") {
+            argsTest.erase(argsTest.begin());
+            flagNum =3;
+        }
+        else{
+            flagNum = 1;
+        }
+        
+        vector<char *> charVec;
+        charVec.push_back(const_cast<char *>(argsTest[0].c_str()));
+        charVec.push_back(('\0'));
+        char** charVec_two = &charVec[0];
+                          struct stat statStruct;
+                          
+                          if(stat(const_cast<char *>(charVec[0]), &statStruct)<0){ // testing if file was located
+                              found = 1;
+                          }
+                          else{
+                              if (flagNum == 1) {
+                                  found = true;
+                              }
+                              
+                              else if(flagNum == 2) {
+                                  (S_ISREG(statStruct.st_mode)) ? found = 1 : found = 0;
+                              }
+                              else if (flagNum == 3) {
+                                  (S_ISDIR(statStruct.st_mode)) ? found = 1 : found = 0;
+                              }
+                              else {
+                                  cout << "Error" << endl;
+                              }
+                        
+                          }
+        
+        
+    }
+    
 };
+
 
 // Command Class that each command will inherit from - Ammar
 class Command : public Base {

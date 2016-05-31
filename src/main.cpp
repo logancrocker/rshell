@@ -324,6 +324,108 @@ class Chunks:public Base{
                                   
                                return 0;   
                               }
+                                       if(isNested)
+                                  {
+                                      vector<string> VecConnect;
+                                      vector<string> chunksVec;
+                                      
+                                      unsigned begin;
+                                      unsigned end;
+                                      string chuncksPush;
+                                      
+                                      for(int i =0;i < commandInput.size();){
+                                          if(commandInput.at(i)=='('){
+                                              begin =i;
+                                              end = perEnds(commandInput, i);
+                                              chuncksPush = commandInput.substr(begin,end -begin+1);
+                                              chunksVec.push_back(chuncksPush);
+                                              i += end - begin+1;
+                                          }
+                                          else if(commandInput.at(i)=='&'){
+                                              if(commandInput.at(i+1)=='&'){
+                                                  VecConnect.push_back("&&");
+                                              }
+                                              i+=2;
+                                          }
+                                          else if(commandInput.at(i)==';'){
+                                              
+                                              VecConnect.push_back(";");
+                                              
+                                              i++;
+                                          }
+                                          else if(commandInput.at(i)==' '){
+                                              
+                                              
+                                              i++;
+                                          }
+                                          else if(commandInput.at(i)=='|'){
+                                              if(commandInput.at(i+1)=='|'){
+                                                  VecConnect.push_back("||");
+                                              }
+                                              i+=2;
+                                          }
+                                          else{
+                                              begin =i;
+                                              unsigned a;
+                                              unsigned b;
+                                              unsigned c;
+                                              c = commandInput.find(";",i);
+                                              a = commandInput.find("&&",i);
+                                              b = commandInput.find("||",i);
+                                              
+                                              if(commandInput.find("&&", i) == string::npos&&commandInput.find("||",i) ==string::npos && commandInput.find(";",i)== string::npos){
+                                                  end= commandInput.size();
+                                              }
+                                              else{
+                                                  if(a<b && a<c){
+                                                      end = a-1;
+                                                  }
+                                                  else if(b< a && b<c){
+                                                      end = b-1;
+                                                  }
+                                                  else if(c< a && c<b){
+                                                      end = c-1;
+                                                  }
+                                              }
+                                              chuncksPush = commandInput.substr(begin,end-begin);
+                                              i+= end - begin;
+                                              chunksVec.push_back(chuncksPush);
+                                              
+                                              
+                                          }
+                                      }
+                                      
+                                      
+                                      
+                                      Base* firstChunck = new Chunks(chunksVec[0]);
+                                      bool boolean = firstChunck->evaluate();
+                                      track.push_back(boolean);
+                                      
+                                      for(int j =0; j < VecConnect.size(); j++){
+                                          Base* nextChunk;
+                                          if(VecConnect[j]  == "&&"){
+                                              nextChunk = new And(boolean, new Chunks(chunksVec[j+1]));
+                                          }
+                                          else if(VecConnect[j]  == "||"){
+                                              nextChunk = new Or(boolean, new Chunks(chunksVec[j+1]));
+                                          }
+                                          else if(VecConnect[j]  == ";"){
+                                              nextChunk = new Semicolon(boolean, new Chunks(chunksVec[j+1]));
+                                          }
+                                          bool nextC = nextChunk->evaluate();
+                                          track.push_back(nextC);
+                                          
+                                      }
+                                      for(int k=0; k< track.size();k++){
+                                          if(track.at(k)==1){
+                                              return 1;
+                                          }
+                                      }
+                                      
+                                      
+                                      
+                                   
+                                  }
     
     
 }

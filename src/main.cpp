@@ -500,53 +500,32 @@ vector<string> parser(string toSplit, const char* delimiters) {
 
 int main () {
     
+    //take user input
     string commandInput = "";
-    string formattedInput;
-    vector<string> v;
-    Base* theLine;
-    while (true) {
+    
+    while (true) { //Keep checking until exit is found
+        //this is the extra credit part
         string login = getlogin();
         char hostname[100];
         gethostname(hostname, 100);
+        
+        //display login and host name and waits for user input
+        
         cout << "[" << login << "@" << hostname << "] $ ";
+        
         getline(cin, commandInput);
+        // Gets rid of leading and ending uneeded space - Ammar
         trim(commandInput);
-        theLine = new Line(commandInput);
-        vector<string> parsedVector;
-        if ((commandInput.find("(") != string::npos) && (commandInput.find(")") != string::npos)) {
-            //there is precedence
-            string command;
-            for (unsigned int i = 0; i < commandInput.size(); ++i) {
-                if (commandInput.at(i) == '&' && i != commandInput.size() - 1) {
-                    if (commandInput.at(i + 1) == '&') {
-                        parsedVector.push_back(command);
-                        command = "";
-                        parsedVector.push_back("&&");
-                    }
-                }
-                else if (commandInput.at(i) == '|' && i != commandInput.size() - 1) {
-                    if (commandInput.at(i + 1) == '|') {
-                        parsedVector.push_back(command);
-                        command = "";
-                        parsedVector.push_back("||");
-                    }
-                }
-                else if (commandInput.at(i) == ';') {
-                    parsedVector.push_back(command);
-                    command = "";
-                    parsedVector.push_back(";");
-                }
-                else {
-                    command += commandInput.at(i);
-                }
-            }
-            printVec(parsedVector);
-            vector<string> postfix;
-            //infix2postfix(parsedVector, postfix);
-            //printVec(postfix);
+        bool blank = false;
+        if(commandInput == ""){
+            blank = true;
         }
-        else {
-            theLine->evaluate();
+        while(blank == false){
+            string inputCommand = commandInput.substr(0, commandInput.find('#', 1));
+            Base* line = new Chunks(inputCommand);
+            line->evaluate();
+            
+            blank = true; //this means done with this command and wants next one
         }
     }
     return 0;

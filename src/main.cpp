@@ -300,6 +300,17 @@ vector<string> parser(string toSplit, const char* delimiters) {
                               }
                           }
 
+class Chunks:public Base{
+  private:
+                              string commandInput;
+                              vector<bool> track;
+                              bool isNested;
+                          public:   
+    
+    
+}
+
+
 int main () {
     
     string commandInput = "";

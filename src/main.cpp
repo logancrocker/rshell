@@ -1,22 +1,17 @@
 #include <iostream>
-#include <algorithm>
-#include <sstream>
-#include <cctype>
-#include <clocale>
-#include <string>
 #include <vector>
 #include <list>
+#include <stack>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <stack>
 #include <string.h>
 #include <netdb.h>
 #include <pwd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
@@ -35,10 +30,10 @@ class Test{
 private:
     int flagNum;
 public:
-    // filetype found
+    
     bool found;
     
-    // format args
+    
     Test(vector<string> argsTest){
         if (argsTest[0] =="-e") {
             argsTest.erase(argsTest.begin());
@@ -59,11 +54,11 @@ public:
         vector<char *> charVec;
         charVec.push_back(const_cast<char *>(argsTest[0].c_str()));
         charVec.push_back(('\0'));
-        //char** charVec_two = &charVec[0];
+        char** charVec_two = &charVec[0];
                           struct stat statStruct;
                           
-                          if(stat(const_cast<char *>(charVec[0]), &statStruct)<0){ // testing if file was located
-                              found = 1;
+                          if(stat(const_cast<char *>(charVec[0]), &statStruct)<0){
+                              found = false;
                           }
                           else{
                               if (flagNum == 1) {
@@ -71,10 +66,10 @@ public:
                               }
                               
                               else if(flagNum == 2) {
-                                  (S_ISREG(statStruct.st_mode)) ? found = 1 : found = 0;
+                                  (S_ISREG(statStruct.st_mode)) ? found = true : found = false;
                               }
                               else if (flagNum == 3) {
-                                  (S_ISDIR(statStruct.st_mode)) ? found = 1 : found = 0;
+                                  (S_ISDIR(statStruct.st_mode)) ? found = true : found = false;
                               }
                               else {
                                   cout << "Error" << endl;
@@ -88,91 +83,111 @@ public:
 };
 
 
+
+
+
+
+
+
+
+
+
+
 // Command Class that each command will inherit from - Ammar
-class Command : public Base {
-    private: 
-        //Vector of commands - Ammar
-        vector<string> commandVec;
+class Command: public Base {
+private:
     
-    public:
-        //Contructor to take in vector and set it to commands vectors
-        Command(vector<string>s){
-            commandVec = s;
+    //Vector of commands - Ammar
+    vector<string> commandVec;
+    
+public:
+    
+    //Contructor to take in vector and set it to commands vectors
+    Command(vector<string>s){
+        commandVec = s;
+    }
+    bool evaluate(){
+        
+        //exit if cmd is "exit"
+        if(commandVec[0] == "exit")
+            //Program stops if input is "exit" - Ammar
+            exit(0);
+        
+        //this chunk is to format the vector in the way we want it
+        vector<char *> temp2;
+        for(unsigned int i = 0; i < commandVec.size(); i++) {
+            temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
         }
-        bool evaluate(){   
-            //exit if cmd is "exit"
-            if(commandVec[0] == "exit") {
-                //Program stops if input is "exit" - Ammar
-                exit(0);
+        
+        temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
+        char** arrChar = &temp2[0];
+        
+        
+        //here we will use fork() so we can do multiple process at once
+        int status;
+        pid_t pid = fork();
+        if (pid < 0) { //to chck if fork failed
+            perror("FAILED");
+            exit(1);
+        }
+        else if (pid == 0) {
+            //if it reaches here, you can pass into execvp
+            //execvp will do all the work for you
+            execvp(const_cast<char *>(arrChar[0]), arrChar);
+            //if it reaches here there is some error
+            exit(127); // exit 127 "command not found"
+        }
+        else if(pid > 0){
+            //have to wait until child finishes
+            // use wait pid or wait ???? waitpid(pid, &status, 0);
+            wait(&status);
+            if(wait(&status) != -1){
+                perror("ERROR: wait");
             }
-            //this chunk is to format the vector in the way we want it
-            vector<char *> temp2;
-            for(unsigned int i = 0; i < commandVec.size(); i++) {
-                temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
-            }
-            temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
-            char** arrChar = &temp2[0];
-            //here we will use fork() so we can do multiple process at once
-            int status;
-            pid_t pid = fork();
-            if (pid < 0) { //to chck if fork failed
-                perror("FAILED");
-                exit(1);
-            }
-            else if (pid == 0) {
-                //if it reaches here, you can pass into execvp
-                //execvp will do all the work for you
-                execvp(const_cast<char *>(arrChar[0]), arrChar);
-                //if it reaches here there is some error
-                exit(127); // exit 127 "command not found"
-            }
-            else if(pid > 0){
-                //have to wait until child finishes
-                // use wait pid or wait ???? waitpid(pid, &status, 0);
-                wait(&status);
-                if(wait(&status) != -1){
-                    perror("ERROR: wait");
-                }
-                if(WIFEXITED(status)){
-                    if(WEXITSTATUS(status) == 0) {  
+            if(WIFEXITED(status)){
+                if(WEXITSTATUS(status) == 0) {
+                    
                     //program is succesful
                     return true;
-                    }
-                    else {
-                    
-                        //this return is false, then the program failed but exiting was normal
-                        return false;
-                    }
                 }
                 else {
-                    //the program messed up and exited abnormally
-                    perror("EXIT: ABNORMAL CHILD");
+                    
+                    //this return is false, then the program failed but exiting was normal
                     return false;
                 }
             }
-            return false;
+            else{
+                
+                //the program messed up and exited abnormally
+                perror("EXIT: ABNORMAL CHILD");
+                return false;
+            }
         }
+        return false;
+    }
 };
 
 class Connectors : public Base {
-    public:
-        Connectors(){};
+public:
+    Connectors(){};
     
-    protected:
-        bool leftCommand; //command b4 the connector
-        Base* rightCommand; //command @ft3r the connect0r
+protected:
+    bool leftCommand; //command b4 the connector
+    Base* rightCommand; //command @ft3r the connect0r
 };
+
+
 
 //will always attempt to run rightCommand
 class Semicolon : public Connectors {
-    public:
-        Semicolon(bool l, Base* r){
-            leftCommand = l; 
-            rightCommand = r;
-        }
-        bool evaluate() {
-            return rightCommand->evaluate();
-        }
+public:
+    Semicolon(bool l, Base* r){
+        leftCommand = l;
+        rightCommand = r;
+    }
+    bool evaluate() {
+        return rightCommand->evaluate();
+    }
 };
 
 //will run the rightcommand if leftcommand succededs
@@ -220,14 +235,14 @@ vector<string> parser(string toSplit, const char* delimiters) {
     }
     return returnThis;
 }
-
-  unsigned perEnds(string commandInput, int a){
+                          
+                          unsigned perEnds(string commandInput, int a){
                               stack<char> charStack;
-                              int i =a;
+                              unsigned i =a;
                               charStack.push('f');
                               
                               i++;
-                              for(unsigned int i=0; i < commandInput.size(); i++)
+                              for(; i < commandInput.size(); i++)
                               {
                                   if(commandInput.at(i)== '('){
                                       charStack.push('(');
@@ -278,7 +293,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                           void perCheck(string commandInput){
                               stack<char> charStack;
                               
-                              for(unsigned int i =0; i < commandInput.size();i++)
+                              for(int i =0; i < commandInput.size();i++)
                               {
                                   if(commandInput.at(i)== '('){
                                       charStack.push('(');
@@ -299,8 +314,9 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                   exit(0);
                               }
                           }
-
-                   class Chunks:public Base{
+                          
+                          
+                          class Chunks:public Base{
                           private:
                               string commandInput;
                               vector<bool> track;
@@ -318,9 +334,9 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       return 1;
                                   }
                                   isNested = 0;
-                                  for(unsigned int i =0;i<commandInput.size();i++){
+                                  for(int i =0;i<commandInput.size();i++){
                                       if(commandInput.at(i)=='('){
-                                          isNested =1;
+                                          isNested =true;
                                       }
                                   }
                                   if(isNested)
@@ -332,7 +348,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       unsigned end;
                                       string chuncksPush;
                                       
-                                      for(unsigned int i =0;i < commandInput.size();){
+                                      for(int i =0;i < commandInput.size();){
                                           if(commandInput.at(i)=='('){
                                               begin =i;
                                               end = perEnds(commandInput, i);
@@ -400,7 +416,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                       bool boolean = firstChunck->evaluate();
                                       track.push_back(boolean);
                                       
-                                      for(unsigned int j =0; j < VecConnect.size(); j++){
+                                      for(int j =0; j < VecConnect.size(); j++){
                                           Base* nextChunk;
                                           if(VecConnect[j]  == "&&"){
                                               nextChunk = new And(boolean, new Chunks(chunksVec[j+1]));
@@ -415,7 +431,7 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                           track.push_back(nextC);
                                           
                                       }
-                                      for(unsigned int k=0; k< track.size();k++){
+                                      for(int k=0; k< track.size();k++){
                                           if(track.at(k)==1){
                                               return 1;
                                           }
@@ -496,7 +512,6 @@ vector<string> parser(string toSplit, const char* delimiters) {
                                   return 0;
                               }
                           };
-
 
 int main () {
     

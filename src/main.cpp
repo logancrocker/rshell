@@ -305,7 +305,15 @@ class Chunks:public Base{
                               string commandInput;
                               vector<bool> track;
                               bool isNested;
-                          public:   
+                          public:  
+                          
+                           bool evaluate()
+                              {
+                                  
+                                  
+                                  
+                               return 0;   
+                              }
     
     
 }

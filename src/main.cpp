@@ -229,7 +229,31 @@ class OutRe : public Base {
             return true;
         }
 };
+      
+      
+
+class inRe : public Base {
+private:
+    Base* left;
+    const char* file;
+    
+public:
+    inRe(Base* left, const char* file) {
+        this->left = left;
+        this->file = file;
+    }
+    bool evaluate() {
+        int in;
         
+        in = open(file,O_RDONLY);
+
+        
+       
+        dup2(in, STDIN_FILENO);
+        close(in);
+        return left->evaluate();
+    }
+};        
 
 //This Function takes the user input and parses it returns us a vector of strings - Ammar
 vector<string> parser(string toSplit, const char* delimiters) {

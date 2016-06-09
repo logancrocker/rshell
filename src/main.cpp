@@ -1,563 +1,561 @@
 #include <iostream>
 #include <vector>
-#include <list>
-#include <fcntl.h>
 #include <stack>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <string.h>
-#include <netdb.h>
-#include <pwd.h>
-#include <sys/socket.h>
+#include <cstdlib>
+#include <stdio.h>
+#include <unistd.h> //used for syscalls
+#include <sys/wait.h> 
+#include <sys/types.h> 
 #include <sys/stat.h>
+#include <fcntl.h> 
+#include <math.h>
 #include <boost/algorithm/string.hpp>
+#include <pwd.h>
 
 using namespace std;
-using namespace boost::algorithm;
-//Working ??
 
-//Virtual Base Class - Ammar
-class Base  {
-public:
-    Base(){};
-    //Function Inherited by each class - Ammar
-    virtual bool evaluate() = 0;
-};
+//forward declarations we needed
+void exeCmd(string cmdLine, bool &executed);
+bool hasSemicolon(string s);
+bool hasHastag(string s);
+bool isAConnector(string s);
+bool chkRed(vector<string>str);
+void stringParser(string cmdln, vector<string>&cmdArrray);
+bool isTest(string str);
 
-
-class Test {
-    private:
-        int flagNum;
-    public:
-        bool found;
-        Test (vector<string> argsTest) {
-            if (argsTest[0] =="-e") {
-                argsTest.erase(argsTest.begin());
-                flagNum =1;
-            }
-            else if (argsTest[0] =="-f") {
-                argsTest.erase(argsTest.begin());
-                flagNum =2;
-            }
-            else if (argsTest[0] =="-d") {
-                argsTest.erase(argsTest.begin());
-                flagNum =3;
-            }
-            else {
-                flagNum = 1;
-            } 
-            vector<char *> charVec;
-            charVec.push_back(const_cast<char *>(argsTest[0].c_str()));
-            charVec.push_back(('\0'));
-            char** charVec_two = &charVec[0];
-            struct stat statStruct;             
-            if (stat(const_cast<char *>(charVec_two[0]), &statStruct) < 0) {
-                found = false;
-            }
-            else {
-                if (flagNum == 1) {
-                    found = true;
-                }              
-                else if (flagNum == 2) {
-                    (S_ISREG(statStruct.st_mode)) ? found = true : found = false;
-                }
-                else if (flagNum == 3) {
-                    (S_ISDIR(statStruct.st_mode)) ? found = true : found = false;
-                }
-                else {
-                    cout << "Error" << endl;
-                }   
-            }
-        }
-    
-};
-
-
-// Command Class that each command will inherit from - Ammar
-class Command : public Base {
-    private:
-        //Vector of commands - Ammar
-        vector<string> commandVec;
-    public:
-        //Contructor to take in vector and set it to commands vectors
-        Command(vector<string>s){
-            commandVec = s;
-        }
-        bool evaluate(){
-            //exit if cmd is "exit"
-            if (commandVec[0] == "exit") {
-                //Program stops if input is "exit" - Ammar
-                exit(0);
-            }
-            else if (commandVec[0] == "test") {
-                commandVec.erase(commandVec.begin());
-                if (commandVec.empty() || (commandVec.size() == 1 && (commandVec[0] == "-e" || commandVec[0] == "-f" || commandVec[0] == "-d"))) {
-                    cout << "no file passed, exiting..." << endl;
-                    exit(0);
-                }
-                Test* testCommand = new Test(commandVec);
-                if (testCommand->found) {
-                    cout << "(true)" << endl;
-                    return true;
-                }
-                else {
-                    cout << "(false)" << endl;
-                    return false;
-                }
-            }        
-            else {
-                //this chunk is to format the vector in the way we want it
-                vector<char *> temp2;
-                for (unsigned int i = 0; i < commandVec.size(); i++) {
-                    temp2.push_back(const_cast<char *>(commandVec[i].c_str()));
-                }
-                temp2.push_back('\0'); //'\0 is to make sure there is a null char in c-str'
-                char** arrChar = &temp2[0];
-                //here we will use fork() so we can do multiple process at once
-                int status;
-                pid_t pid = fork();
-                if (pid < 0) { //to chck if fork failed
-                    perror("FAILED");
-                    exit(1);
-                }
-                else if (pid == 0) {
-                    //if it reaches here, you can pass into execvp
-                    //execvp will do all the work for you
-                    execvp(const_cast<char *>(arrChar[0]), arrChar);
-                    //if it reaches here there is some error
-                    exit(127); // exit 127 "command not found"
-                }
-                else if(pid > 0){
-                    //have to wait until child finishes
-                    // use wait pid or wait ???? waitpid(pid, &status, 0);
-                    wait(&status);
-                    if (wait(&status) != -1) {
-                        perror("ERROR: wait");
-                    }
-                    if (WIFEXITED(status)){
-                        if(WEXITSTATUS(status) == 0) {
-                            //program is succesful
-                            return true;
-                        }
-                    }
-                    else {
-                    
-                        //this return is false, then the program failed but exiting was normal
-                        return false;
-                    }
-                }
-                else {
-                    //the program messed up and exited abnormally
-                    perror("EXIT: ABNORMAL CHILD");
-                    return false;
-                }
-            }
-            return false;
-        }
-};
-
-class Connectors : public Base {
-    public:
-        Connectors(){};   
-    protected:
-        bool leftCommand; //command b4 the connector
-        Base* rightCommand; //command @ft3r the connect0r
-};
-
-//will always attempt to run rightCommand
-class Semicolon : public Connectors {
-    public:
-        Semicolon(bool l, Base* r){
-            leftCommand = l;
-            rightCommand = r;
-        }
-        bool evaluate() {
-            return rightCommand->evaluate();
-        }
-};
-
-//will run the rightcommand if leftcommand succededs
-class And : public Connectors{
-    public:
-        And(bool l, Base* r){
-            leftCommand = l; rightCommand = r;
-        }
-        bool evaluate(){
-            if (leftCommand) {
-                return rightCommand->evaluate();
-            }
-            return false;
-        }   
-};
-
-//will run the rightCommand if the LeftCommand fails
-class Or : public Connectors{
-    public:
-        Or(bool l, Base* r){
-            leftCommand = l; rightCommand = r;
-        } 
-        //Return if it evaluated or not
-        bool evaluate(){
-            if(!leftCommand) {
-                return rightCommand->evaluate();
-            }
-            return false;
-        }
-};
-
-class OutRe : public Base {
-    private:
-        Base* left;
-        const char* file;
-
-    public:
-        OutRe(Base* left, const char* file) {
-            this->left = left;
-            this->file = file;
-        }
-        bool evaluate() {
-            int out;
-            out = open(file, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-            close(1);
-            dup(out);
-            close(out);
-            cout << "Testing" << endl;
-            left->evaluate();
-            return true;
-        }
-};
-      
-      
-
-class inRe : public Base {
-private:
-    Base* left;
-    const char* file;
-    
-public:
-    inRe(Base* left, const char* file) {
-        this->left = left;
-        this->file = file;
-    }
-    bool evaluate() {
-        int in;
-        
-        in = open(file,O_RDONLY);
-
-        
-       
-        dup2(in, STDIN_FILENO);
-        close(in);
-        return left->evaluate();
-    }
-};        
-
-//This Function takes the user input and parses it returns us a vector of strings - Ammar
-vector<string> parser(string toSplit, const char* delimiters) {
-    char* toTokenize = new char[toSplit.size() + 1];
-    strcpy(toTokenize, toSplit.c_str());
-    toTokenize[toSplit.size() + 1] = '\0';
-    char* cutThis;
-    //begin parsing
-    cutThis = strtok(toTokenize, delimiters);
-    vector<string> returnThis;
-    while (cutThis != NULL) {
-        string currWord(cutThis);
-        trim(currWord);
-        returnThis.push_back(currWord);
-        cutThis = strtok(NULL, delimiters);
-    }
-    return returnThis;
+bool execute(vector<string>cmdVec) {
+	if (cmdVec.at(0) == "exit") {
+		exit(0);
+	}
+	if(cmdVec.size() > 1){
+		if (cmdVec.at(1).at(0) == '\"'||cmdVec.at(1).at(0) ==  '\'') { //fixes quotation marks when executing echo
+			cmdVec.at(1).erase(cmdVec.at(1).begin());
+			cmdVec.at(cmdVec.size()-1).erase(cmdVec.at(cmdVec.size()-1).begin() + cmdVec.at(cmdVec.size()-1).size()-1);
+		}
+	}
+	
+	//here we will make an array of the commands so we can use execvp
+	char* commandArray[cmdVec.size() + 1];
+	
+	for (int i = 0; i < static_cast<int>(cmdVec.size()); i++) {
+		commandArray[i] = (char*)cmdVec.at(i).c_str();	
+	}
+	//e will fork here
+	commandArray[cmdVec.size()] = NULL; 
+	int pidstatus = 0;	
+	bool pidstates;
+	char path[20] = "/bin/"; 	
+	strcat(path, cmdVec[0].c_str()); 
+	pid_t pid = fork();
+	if(pid==0) { 
+		int exec = execvp(path,commandArray); 
+		if (exec == -1) { 
+			return false;
+			perror("Execute");
+			exit(-1);
+		}
+	}
+	else { //parent
+		waitpid(pid, &pidstatus, 0); //wait till child is finished
+	}	
+	return true;
 }
-                          
-unsigned perEnds(string commandInput, int a){
-    stack<char> charStack;
-    unsigned i =a;
-    charStack.push('f');                          
-    i++;
-    for (; i < commandInput.size(); i++) {
-        if (commandInput.at(i)== '('){
-            charStack.push('(');
-        }
-        else if (commandInput.at(i) == ')') {
-            char open = charStack.top();
-            charStack.pop();
-            if (charStack.empty() && open =='f') {
-                return i;
-            }
-        }
-    }
-    return i;
-}
-                          
-string parsePer(string commandInput){
-    stack<char> charStack;
-    bool isBool = 0;
-    do {
-        trim(commandInput);
-        if (commandInput.find('(') !=0) {
-            return commandInput;
-        }
-        else if (perEnds(commandInput, 0) == commandInput.size()-1) {
-            commandInput.erase(0,1);
-            commandInput.erase(commandInput.size()-1);
-            if (perEnds(commandInput, 0)== commandInput.size()-1) {
-                isBool = 1;
-            }
-            else {
-                return commandInput;
-            }                    
-        }                                               
-        else {
-            return commandInput;
-        }
-    } while (isBool == 1);
-    return commandInput;
-}                          
-                          
-void perCheck(string commandInput) {
-    stack<char> charStack;                         
-    for (unsigned int i =0; i < commandInput.size();i++) {
-        if (commandInput.at(i)== '(') {
-            charStack.push('(');
-        }
-        else if (commandInput.at(i)== ')') {
-            if (!charStack.empty()) {
-                charStack.pop();
-            }
-            else {
-                cout << "Error";                         
-                exit(0);
-            }
-        }
-    }
-    if (!charStack.empty()) {
-        cout << "Error";
-        exit(0);
-    }
-}                          
-                          
-class Chunks : public Base {
-    private:
-        string commandInput;
-        vector<bool> track;
-        bool isNested;
-    public:
-        Chunks(string s) {
-            commandInput =s;
-        }                      
-        bool evaluate() {
-            trim(commandInput);
-            commandInput = parsePer(commandInput);
-            if (commandInput == "") {
-                return 1;
-            }
-            isNested = 0;
-            for (unsigned int i = 0; i < commandInput.size(); i++) {
-                if (commandInput.at(i) == '(') {
-                    isNested = true;
-                }
-            }
-            if (isNested) {
-                vector<string> VecConnect;
-                vector<string> chunksVec;                      
-                unsigned begin;
-                unsigned end;
-                string chuncksPush;                      
-                for (unsigned int i =0;i < commandInput.size();) {
-                    if (commandInput.at(i)=='(') {
-                        begin =i;
-                        end = perEnds(commandInput, i);
-                        chuncksPush = commandInput.substr(begin,end -begin+1);
-                        chunksVec.push_back(chuncksPush);
-                        i += end - begin+1;
-                    }
-                    else if (commandInput.at(i)=='&') {
-                        if (commandInput.at(i+1)=='&') {
-                            VecConnect.push_back("&&");
-                        }
-                        i += 2;
-                    }
-                    else if (commandInput.at(i)==';') {   
-                        VecConnect.push_back(";");                      
-                        i++;
-                    }
-                    else if (commandInput.at(i)==' ') {
-                        i++;
-                    }
-                    else if (commandInput.at(i)=='|') {
-                        if (commandInput.at(i+1)=='|') {
-                            VecConnect.push_back("||");
-                        }
-                        i += 2;
-                    }
-                    else if (commandInput.at(i) == '>') {
-                        VecConnect.push_back(">");
-                        i++;
-                    }
-                    else {
-                        begin = i;
-                        unsigned a;
-                        unsigned b;
-                        unsigned c;
-                        unsigned d;
-                        c = commandInput.find(";",i);
-                        a = commandInput.find("&&",i);
-                        b = commandInput.find("||",i);
-                        d = commandInput.find(">",i);                      
-                        if (commandInput.find("&&", i) == string::npos&&commandInput.find("||",i) ==string::npos && commandInput.find(";",i)== string::npos&&commandInput.find("|",i)==string::npos) {
-                            end = commandInput.size();
-                        }
-                        else {
-                            if (a < b && a < c && a < d) {
-                                end = a - 1;
-                            }
-                            else if (b < a && b < c && b < d) {
-                                end = b - 1;
-                            }
-                            else if (c < a && c < b && c < d) {
-                                end = c - 1;
-                            }
-                            else if (d < a && d < b && d < c) {
-                                end = d - 1;
-                            }
-                        }
-                        chuncksPush = commandInput.substr(begin,end-begin);
-                        i += end - begin;
-                        chunksVec.push_back(chuncksPush);                                            
-                    }
-                }                         
-                Base* firstChunck = new Chunks(chunksVec[0]);
-                bool boolean = firstChunck->evaluate();
-                track.push_back(boolean);                      
-                for (unsigned int j =0; j < VecConnect.size(); j++) {
-                    Base* nextChunk;
-                    if (VecConnect[j]  == "&&") {
-                        nextChunk = new And(boolean, new Chunks(chunksVec[j+1]));
-                    }
-                    else if (VecConnect[j]  == "||") {
-                        nextChunk = new Or(boolean, new Chunks(chunksVec[j+1]));
-                    }
-                    else if (VecConnect[j]  == ";") {
-                        nextChunk = new Semicolon(boolean, new Chunks(chunksVec[j+1]));
-                    }
-                    else if (VecConnect[j] == ">") {
-                        nextChunk = new OutRe(firstChunck, chunksVec[j + 1].c_str());
-                    }
-                    bool nextC = nextChunk->evaluate();
-                    track.push_back(nextC);                      
-                }
-                for (unsigned int k = 0; k < track.size(); k++) {
-                    if (track.at(k)==1) {
-                        return 1;
-                    }
-                }                                           
-            }
-            else if (!isNested) {
-                int ind_one;
-                int ind_two;                      
-                if (commandInput.find('[') != string::npos) {
-                    ind_one = commandInput.find('[');
-                    if (commandInput.find(']')) {
-                        ind_two = commandInput.find(']');
-                    }
-                    else {
-                        cout << "Not closed" << endl;
-                        exit(0);                      
-                    }
-                    commandInput.erase(ind_one,1);
-                    commandInput.erase(ind_two-1,1);
-                    commandInput.insert(0, "test ");            
-                }                      
-                vector<string> ConVec;
-                for (unsigned l = 0; l < commandInput.length(); l++) { 
-                    if (commandInput[l]=='&') {
-                        if(commandInput[l+1]=='&') {
-                            ConVec.push_back("&&");
-                        }
-                    }
-                    else if (commandInput[l]=='|') {
-                        if (commandInput[l+1]=='|') {
-                            ConVec.push_back("||");
-                        }
-                    }
-                    else if (commandInput[l]==';') {
-                        ConVec.push_back(";");                      
-                    }
-                    else if (commandInput[l] == '>') {
-                        ConVec.push_back(">");
-                    }
-                }
-                //cout << "ConVec size " << ConVec.size() << endl;                      
-                vector<string> commands = parser(commandInput, "||&&;>");
-                vector<string> begincommands = parser(commands.at(0), " ");
-                Base* first = new Command(begincommands);
-                bool g;
-                if (!(ConVec[0] == ">")) {
-                    g = first->evaluate();
-                    track.push_back(g);
-                }
-                for (unsigned i = 0; i < ConVec.size(); i ++) {
-                    Base* next;
-                    vector<string> args = parser(commands.at(i + 1), " ");
-                    if (ConVec.at(i) == "&&") {
-                        next = new And(g, new Command(args));
-                    }
-                    else if (ConVec.at(i) == "||") {
-                        next = new Or(g, new Command(args));
-                    }
-                    else if (ConVec.at(i) == ";") {
-                        next = new Semicolon(g, new Command(args));
-                    }
-                    else if (ConVec.at(i) == ">") {
-                        next = new OutRe(first, args[0].c_str());
-                    }
-                    bool cNext = next->evaluate();
-                    track.push_back(cNext);
-                }                      
-                for (unsigned int f = 0; f < track.size(); f++) {
-                    if (track[f] == 1) {
-                        return 1;
-                    }
-                }
-                return 0;
-            }
-            return 0;
-        }
-};
+bool testResult(vector<string>cmdVec){
+    bool flag;
+	struct stat file;
+	
+	if( cmdVec.at(1) != "-e" && cmdVec.at(1) != "-f" && cmdVec.at(1) != "-d"){
+			flag = true;
+	}else {
+			flag = false;
+	}
+	//checks for test case whit no specs
+	if( cmdVec.at(1) == "-e" || !flag ){
+		if( flag && stat(cmdVec.at(2).c_str(), &file) == 0){
+			return true;
+		}else if (!flag && stat(cmdVec.at(1).c_str(), &file) ==0){
+			return true;
+		}else {
+			return false;
+		}
+	}
 
+	
+
+	else if(cmdVec.at(1) == "-d"){ // checks for directory
+		if(stat(cmdVec.at(2).c_str(), &file) == 0) {
+			if(S_ISDIR(file.st_mode)){
+				return true;
+			}else{
+			    return false;
+			}
+		}else{
+			return false;
+		}
+	}
+	
+	else if(cmdVec.at(1) == "-f"){	//checks for file
+		if(stat(cmdVec.at(2).c_str(), &file) == 0){
+			if(S_ISREG(file.st_mode)){
+				return true;
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
+	return false;
+}
+
+
+//takes vctor and turns it into string
+string toString(vector<string>cmd) {
+	string str;
+	for(unsigned i = 0; i < cmd.size(); i++) {
+		str += cmd.at(i);
+	}
+	str += " ";
+	return str;
+}
+
+
+
+void pipeCmd(vector<string>cmd, vector<string>cmd2) {
+	char* firstCommand[cmd.size() + 1];
+	for (int i = 0; i < static_cast<int>(cmd.size()); i++) { //convert the vector into a char* array for execvp
+		firstCommand[i] = (char*)cmd.at(i).c_str();	
+	}
+	firstCommand[cmd.size()] = NULL; //set last value to NULL for execvp
+
+	char* secondCommand[cmd2.size() + 1];
+	for (int i = 0; i < static_cast<int>(cmd2.size()); i++) { //convert the second command into a char* array for execvp
+		secondCommand[i] = (char*)cmd2.at(i).c_str();	
+	}
+	secondCommand[cmd2.size()] = NULL; //set last value to NULL for execvp
+				
+  	int fileDesc[2]; //file descriptors
+  	pipe(fileDesc);
+  	pid_t pid;
+
+	
+	if (fork() == 0) { // child process #1
+		dup2(fileDesc[0], 0); // change stdin to fileDesc[0]
+		close(fileDesc[1]); //close the end of the pipe
+
+		//Execute the second command
+		execvp(secondCommand[0], secondCommand);
+		perror("execvp failed");
+	} 
+	else if ((pid = fork()) == 0) { // child process #2
+		dup2(fileDesc[1], 1); //change stdout to file output
+
+		close(fileDesc[0]); //close the pipe, not going to read child process
+
+		//Execute the first command
+		execvp(firstCommand[0], firstCommand);
+		perror("execvp failed");
+	} 
+	else { //parent process
+		waitpid(pid, NULL, 0);
+	}
+}
+
+bool executeRedirect(vector<string>cmdVec) {
+
+	int STDsv[2]; 
+	vector<string>command; 
+	for(unsigned i = 0; i < cmdVec.size(); i++) {
+		command.push_back(cmdVec.at(i));
+		if((cmdVec.at(i) == ">") && command.size() > 1) {
+		    //pop off redirect
+			command.pop_back(); 
+			char file[cmdVec.at(i+1).size()];
+			strcpy(file,cmdVec.at(i+1).c_str());
+			i++;
+			
+			int pFile;
+			if((pFile = open(file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP )) == -1) {
+				perror("Couldn't open file");
+				exit(1);
+			}
+			STDsv[1] = dup(1); 
+			dup2(pFile,1); 
+			string commnd = toString(command);
+			bool Executed = true;
+			exeCmd(commnd,Executed);
+			dup2(STDsv[1],1);
+		}
+		else if((cmdVec.at(i)==">>")) {
+		    if(command.size() > 1){
+    			command.pop_back(); 
+    			char file[cmdVec.at(i+1).size()];
+    			strcpy(file,cmdVec.at(i+1).c_str());
+    			i++;
+    			int pFile;
+    			if((pFile = open(file, O_RDWR | O_APPEND, S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP )) == -1) {
+    				perror("CANNOT OPEN FILE");
+    				exit(1);
+    			}
+    			STDsv[1] = dup(1);
+    			dup2(pFile,1); 
+    			string commnd = toString(command);
+    			bool Executed = true;
+    			exeCmd(commnd,Executed);
+    			dup2(STDsv[1],1); 
+		    }
+		}
+		else if((cmdVec.at(i) == "<") && command.size() > 1) {
+			command.pop_back();
+			char file[cmdVec.at(i+1).size()];
+			strcpy(file,cmdVec.at(i+1).c_str());
+			i++;
+			int pFile;
+			if((pFile = open(file, O_RDWR | O_APPEND, S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP )) == -1) {
+				perror("PROBLEM OPEING FILE");
+				exit(1);
+			}
+			STDsv[0] = dup(0); //saves stdin
+			dup2(pFile,0); //changes to directory the file input
+			string commnd = toString(command);
+			bool Executed = true;
+			exeCmd(commnd,Executed);
+			dup2(STDsv[0],0); //restores stdn
+		}
+		else if((cmdVec.at(i) == "|") && command.size() > 1) {
+			vector<string>secondCommand;
+			command.pop_back();
+			++i;
+			for (unsigned j = i; j < cmdVec.size(); j++) {
+				if(!(cmdVec.at(j) == ">>" || cmdVec.at(j) == ">" || cmdVec.at(j) == "|" || cmdVec.at(j) == "<")){
+					secondCommand.push_back(cmdVec.at(j));
+				}
+			}
+			pipeCmd(command,secondCommand);
+		}
+	}
+	return true;
+}
+
+
+//next to fucntions check for parenthesis
+bool endParen(string str){
+	if(str.at(str.size() - 1) == ')')
+		return true; 
+	return false; 
+}
+
+bool openParen(string str){ 
+	if(str.at(0) == '(')
+		return true; 
+	return false; 
+}
+
+//this executes command 
+void exeCmd(string cmdLine, bool &executed) {
+	vector<string>commandArray , command; 
+	
+	
+	if (cmdLine == "exit") {
+		exit(0);
+	}
+	stringParser(cmdLine, commandArray);
+	bool RedirectReq = false;
+	
+	//LOTS OF REDUNDANT CODE HERE SO MOST DOES NOT NEED TO BE COMMENTED
+	for (unsigned i = 0; i < commandArray.size(); i++) { //exectues if there are two commands around a connector
+		command.push_back(commandArray.at(i));
+
+	
+		if(isAConnector(commandArray.at(i)) && command.size() > 1) { //checks for next commands
+			RedirectReq = chkRed(command);
+			if(command.at(1) == "#") { //handels comments
+					break;
+			}
+
+			if (command.at(0)== ";") {
+				
+				command.erase(command.begin()); 
+				command.pop_back(); 
+				if(isTest(command.at(0)))
+					executed = testResult(command);
+				else if(RedirectReq) 
+					executed = executeRedirect(command);
+				else
+					executed = execute(command);
+				command.clear();
+				i--;
+			}
+
+			else if(command.at(0) == "&&") {
+				 
+				command.erase(command.begin()); //remove connector from command
+				command.pop_back(); //remove connector at the end
+				if (executed == true) {
+					if(isTest(command.at(0)))
+						executed = testResult(command);
+					
+					else if(RedirectReq) 
+						executed = executeRedirect(command);
+					else
+						executed = execute(command);
+				}
+				command.clear();
+				i--;
+			}
+			else if(command.at(0) == "||") {
+				
+				command.erase(command.begin());
+				command.pop_back(); 
+				if (executed == false) { 
+					if(isTest(command.at(0)))
+						executed = testResult(command);
+					else if(RedirectReq) 
+						executed = executeRedirect(command);
+					else
+						executed = execute(command);
+				}
+				else 
+					executed = false;
+				command.clear();
+				i--;
+			}
+			else if(command.at(0) == "#") {
+                if(command.size() == 1)
+				    break; 
+			}
+			else if(!isAConnector(command.at(0))){ 
+				i--;
+				command.pop_back(); 
+				if(isTest(command.at(0)))
+					executed = testResult(command);
+				else if(RedirectReq) 
+					executed = executeRedirect(command);
+				else
+					executed = execute(command);
+				command.clear();
+			}
+			RedirectReq = false;
+		}
+		else if(i == commandArray.size()-1) { //cheks for last case
+			RedirectReq = chkRed(command);
+			if(isAConnector(command.at(command.size()-1))) { 
+				command.pop_back();
+				break;
+			}
+			if (command.size() != 0 && command.at(0) == "||") {
+				command.erase(command.begin());
+				if (executed == false) {
+					if(isTest(command.at(0)))
+						executed = testResult(command);
+					else if(RedirectReq)
+						executed = executeRedirect(command);
+					else
+						executed = execute(command);
+				}
+			}
+			else if (command.size() != 0 && command.at(0) == "&&") {
+				command.erase(command.begin()); //delete connector
+				if (executed == true) {
+					if(isTest(command.at(0)))
+						executed = testResult(command);
+					else if(RedirectReq) 
+						executed = executeRedirect(command);
+					else
+						executed = execute(command);
+				}
+			}
+			else if (command.size() != 0 && command.at(0) == ";") {
+				command.erase(command.begin());
+				if(isTest(command.at(0)))
+					executed = testResult(command);
+				else if(RedirectReq)
+					executed = executeRedirect(command);
+				else
+					executed = execute(command);
+				break;
+			}
+			else if (command.size() != 0 && command.at(0) == "#") {
+				command.erase(command.begin());
+				return;
+			}
+			else {
+				if(isTest(command.at(0)))
+					executed = testResult(command);
+				else if(RedirectReq) 
+					executed = executeRedirect(command);
+				else
+					executed = execute(command);
+			}
+		}
+	}
+}
+
+bool isAConnector(string str) {
+    bool ret = false;
+	if (str == "#" || str== "||" || str == "&&" || str == ";") {
+		ret = true;
+	}
+	return ret;	
+}
+bool isTest(string str){
+    bool ret = false;
+	if(str == "test" || str == "["){
+			ret= true;
+	}
+	return ret;
+}
+bool hasHastag(string str){
+	for(unsigned i = 0; i < str.size(); ++i){
+			if(str.at(i) == '#') {
+					return true;
+			}
+	}
+	return false;
+}
+bool hasSemicolon(string str){ 
+    bool ret = false;
+	for(unsigned i = 0; i < str.size(); ++i){
+		if(str.at(i) == ';'){
+				ret = true; 
+		}
+	}
+	return ret; 
+}
+void stringParser(string cmdln, vector<string>&cmdArrray) {
+	//convert to char and then tokenize
+	char* token; 
+	char* cmd = new char[cmdln.length() + 1];
+	strcpy(cmd, cmdln.c_str());
+	token = strtok(cmd, " "); 
+	for (int i = 0; token != NULL; i++) {
+
+		if (token == NULL)
+			break;
+		string strToken = string(token);
+		//takes care of ;
+		if(!isAConnector(strToken)) { 
+			if (hasSemicolon(strToken)) {
+			
+				strToken.erase(strToken.begin() + strToken.size() -1 ); 
+				cmdArrray.push_back(strToken); 
+				cmdArrray.push_back(";");
+			}
+			else if(hasHastag(strToken)) { //take care of #
+				strToken.erase(strToken.begin()); 
+				cmdArrray.push_back("#"); 
+				cmdArrray.push_back(strToken);
+			}
+			else
+				cmdArrray.push_back(strToken); 
+		}
+		else if(endParen(strToken)){//takes care of parenthesis
+			if(strToken.size() == 1)
+				cmdArrray.push_back(strToken);
+			else{
+				strToken.erase(strToken.begin() + strToken.size() -1 ); 
+				cmdArrray.push_back(strToken); 
+				cmdArrray.push_back(")");
+			}
+		}
+		else if(openParen(strToken)){
+			if(strToken.size() == 1)
+				cmdArrray.push_back(strToken);
+			else{
+				strToken.erase(strToken.begin());
+				cmdArrray.push_back("("); 
+				cmdArrray.push_back(strToken); 
+			}
+		}
+		else
+			cmdArrray.push_back(strToken);
+		token = strtok(NULL, " ");
+	}
+}  
+bool chkRed(vector<string>str) {
+	for(unsigned i = 0; i < str.size(); i++) {
+		if (str.at(i) == "|" || str.at(i) == ">" || str.at(i) == ">>" || str.at(i) == "<"){
+			return true;
+		}
+	}
+	return false;
+}
+
+//in main the whole thing runs
 int main () {
-    
-    //take user input
-    string commandInput = "";
-    
-    while (true) { //Keep checking until exit is found
-        //this is the extra credit part
-        string login = getlogin();
-        char hostname[100];
-        gethostname(hostname, 100);
+	string cmdLine;
+	//for exiting
+	while(cmdLine != "exit") {
+		
+    	char* username = getlogin();
+    	char hostname[BUFSIZ]; 
+    	gethostname(hostname, 1024);
+    	if (username == NULL)
+    		cout << "$ ";
+    	else 
+    		cout << username << '@' << hostname << "$ ";
+    		
+		getline(cin, cmdLine);
+		if (cmdLine == "exit") { 
+			exit(0);
+		}
+		else {
+			bool Executed = true;
+        	
+        	vector<string>parseCommands;
+        	vector<string>commandList;
+        	stringParser(cmdLine,parseCommands);
+        	string comm;
+        	bool insideParenthesis = false;
+        	for(unsigned i = 0; i < parseCommands.size();i++) {
+        		comm += parseCommands.at(i);
+        		if(i < parseCommands.size()-1) { 
+        			if(isAConnector(parseCommands.at(i+1)) && !insideParenthesis) {
+        				if(!insideParenthesis){
+        				    //removie paren
+            				for(unsigned i = 0; i < comm.size(); i++) {
+    		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
+    		                	    comm.erase(comm.begin() + i);
+    		                    }
+    	                    }
+        				}
+        				commandList.push_back(comm);
+        				comm.clear();
+        			}
+        		} //dont add a space to end of paren
+        		if(i < parseCommands.size()-1 && !endParen(parseCommands.at(i))) { 
+        			comm += " ";
+        		}
         
-        //display login and host name and waits for user input
-        
-        cout << "[" << login << "@" << hostname << "] $ ";
-        
-        getline(cin, commandInput);
-        // Gets rid of leading and ending uneeded space - Ammar
-        trim(commandInput);
-        bool blank = false;
-        if(commandInput == ""){
-            blank = true;
-        }
-        while(blank == false){
-            string inputCommand = commandInput.substr(0, commandInput.find('#', 1));
-            Base* line = new Chunks(inputCommand);
-            line->evaluate();
-            
-            blank = true; //this means done with this command and wants next one
-        }
-    }
-    return 0;
+        		if(openParen(parseCommands.at(i))) {
+        			insideParenthesis = true;
+        		}
+        		else if(endParen(parseCommands.at(i))) {
+        		    //remove paren
+        			for(unsigned i = 0; i < comm.size(); i++) {
+    		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
+    		                	    comm.erase(comm.begin() + i);
+    		                    }
+    	                    }
+        			commandList.push_back(comm);
+        			comm.clear();
+        			insideParenthesis = false;
+        		}
+        		else if(i == parseCommands.size() - 1) {
+        		    //remove paren
+        			for(unsigned i = 0; i < comm.size(); i++) {
+    		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
+    		                	    comm.erase(comm.begin() + i);
+    		                    }
+    	                    }
+        			commandList.push_back(comm);
+        		}
+        	}
+        	for (unsigned i = 0; i < commandList.size(); i++) {
+        		exeCmd(commandList.at(i),Executed);
+        	}
+		}
+	}
+	return 0;
 }

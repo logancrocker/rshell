@@ -22,11 +22,13 @@ bool chkRed(vector<string>str);
 void stringParser(string cmdln, vector<string>&cmdArrray);
 bool isTest(string str);
 
+//execute function is the thing that will run al lthe functions
 bool execute(vector<string>cmdVec) {
-	if (cmdVec.at(0) == "exit") {
+    //check to see if the input is exit then exit
+	if (cmdVec.at(0) == "EXIT") {
 		exit(0);
 	}
-	if(cmdVec.size() > 1){
+	if(cmdVec.size() > 1){ //if command input is not exit
 		if (cmdVec.at(1).at(0) == '\"'||cmdVec.at(1).at(0) ==  '\'') { //fixes quotation marks when executing echo
 			cmdVec.at(1).erase(cmdVec.at(1).begin());
 			cmdVec.at(cmdVec.size()-1).erase(cmdVec.at(cmdVec.size()-1).begin() + cmdVec.at(cmdVec.size()-1).size()-1);
@@ -35,11 +37,11 @@ bool execute(vector<string>cmdVec) {
 	
 	//here we will make an array of the commands so we can use execvp
 	char* commandArray[cmdVec.size() + 1];
-	
+	//here we fill the array
 	for (int i = 0; i < static_cast<int>(cmdVec.size()); i++) {
 		commandArray[i] = (char*)cmdVec.at(i).c_str();	
 	}
-	//e will fork here
+	//we will fork here and there are sys calls
 	commandArray[cmdVec.size()] = NULL; 
 	int pidstatus = 0;	
 	bool pidstates;
@@ -50,7 +52,7 @@ bool execute(vector<string>cmdVec) {
 		int exec = execvp(path,commandArray); 
 		if (exec == -1) { 
 			return false;
-			perror("Execute");
+			perror("EXECUTION FAILURE");
 			exit(-1);
 		}
 	}
@@ -59,10 +61,11 @@ bool execute(vector<string>cmdVec) {
 	}	
 	return true;
 }
+//this returns true or false depending on what happened to the test
 bool testResult(vector<string>cmdVec){
     bool flag;
 	struct stat file;
-	
+	//if there is a flag retur n true
 	if( cmdVec.at(1) != "-e" && cmdVec.at(1) != "-f" && cmdVec.at(1) != "-d"){
 			flag = true;
 	}else {
@@ -78,9 +81,8 @@ bool testResult(vector<string>cmdVec){
 			return false;
 		}
 	}
-
 	
-
+//directory tag is -d
 	else if(cmdVec.at(1) == "-d"){ // checks for directory
 		if(stat(cmdVec.at(2).c_str(), &file) == 0) {
 			if(S_ISDIR(file.st_mode)){
@@ -93,7 +95,7 @@ bool testResult(vector<string>cmdVec){
 		}
 	}
 	
-	else if(cmdVec.at(1) == "-f"){	//checks for file
+	else if(cmdVec.at(1) == "-f"){	//checks for file -f
 		if(stat(cmdVec.at(2).c_str(), &file) == 0){
 			if(S_ISREG(file.st_mode)){
 				return true;
@@ -108,7 +110,7 @@ bool testResult(vector<string>cmdVec){
 }
 
 
-//takes vctor and turns it into string
+//takes vctor and turns it into string this function is needed so we can do execvp
 string toString(vector<string>cmd) {
 	string str;
 	for(unsigned i = 0; i < cmd.size(); i++) {
@@ -119,32 +121,33 @@ string toString(vector<string>cmd) {
 }
 
 
-
+//checks to see if there are pipes and then carries out the stuff needed to do
 void pipeCmd(vector<string>cmd, vector<string>cmd2) {
-	char* firstCommand[cmd.size() + 1];
-	for (int i = 0; i < static_cast<int>(cmd.size()); i++) { //convert the vector into a char* array for execvp
+	char* firstCommand[cmd.size() + 1]; //for the first command 
+	for (int i = 0; i < static_cast<int>(cmd.size()); i++) { //vector -> character 
 		firstCommand[i] = (char*)cmd.at(i).c_str();	
 	}
-	firstCommand[cmd.size()] = NULL; //set last value to NULL for execvp
+	firstCommand[cmd.size()] = NULL; //we need last value null for system call
+	
 
-	char* secondCommand[cmd2.size() + 1];
-	for (int i = 0; i < static_cast<int>(cmd2.size()); i++) { //convert the second command into a char* array for execvp
+	char* secondCommand[cmd2.size() + 1]; //for the 2nd command 
+	for (int i = 0; i < static_cast<int>(cmd2.size()); i++) { //make char array
 		secondCommand[i] = (char*)cmd2.at(i).c_str();	
 	}
-	secondCommand[cmd2.size()] = NULL; //set last value to NULL for execvp
+	secondCommand[cmd2.size()] = NULL; 
 				
-  	int fileDesc[2]; //file descriptors
+  	int fileDesc[2]; //these are descritors for the files
   	pipe(fileDesc);
   	pid_t pid;
 
 	
 	if (fork() == 0) { // child process #1
-		dup2(fileDesc[0], 0); // change stdin to fileDesc[0]
-		close(fileDesc[1]); //close the end of the pipe
+		dup2(fileDesc[0], 0); // the std is changed to its descriptor
+		close(fileDesc[1]); //here we need to close the pipe
 
 		//Execute the second command
 		execvp(secondCommand[0], secondCommand);
-		perror("execvp failed");
+		perror("SYSCALL EXECVP FAILURE");// prints error message if execvp fails
 	} 
 	else if ((pid = fork()) == 0) { // child process #2
 		dup2(fileDesc[1], 1); //change stdout to file output
@@ -153,20 +156,21 @@ void pipeCmd(vector<string>cmd, vector<string>cmd2) {
 
 		//Execute the first command
 		execvp(firstCommand[0], firstCommand);
-		perror("execvp failed");
+		perror("EXECVP DID NOT WORK");
 	} 
 	else { //parent process
-		waitpid(pid, NULL, 0);
+		waitpid(pid, NULL, 0); //must wait until child is done
 	}
 }
 
-bool executeRedirect(vector<string>cmdVec) {
-
+//like the pipcmd but for redirect
+bool executeRedirect(vector<string>cmdVec) { //will do the redirecting
+//will take care of 3 different things <, >, >>
 	int STDsv[2]; 
-	vector<string>command; 
+	vector<string>command;  // we need a vector of commands that are being redireted and loop wil lfill
 	for(unsigned i = 0; i < cmdVec.size(); i++) {
 		command.push_back(cmdVec.at(i));
-		if((cmdVec.at(i) == ">") && command.size() > 1) {
+		if((cmdVec.at(i) == ">") && command.size() > 1) { //redirection case 
 		    //pop off redirect
 			command.pop_back(); 
 			char file[cmdVec.at(i+1).size()];
@@ -175,7 +179,7 @@ bool executeRedirect(vector<string>cmdVec) {
 			
 			int pFile;
 			if((pFile = open(file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP )) == -1) {
-				perror("Couldn't open file");
+				perror("FILE OPEING FAILEd");
 				exit(1);
 			}
 			STDsv[1] = dup(1); 
@@ -185,7 +189,7 @@ bool executeRedirect(vector<string>cmdVec) {
 			exeCmd(commnd,Executed);
 			dup2(STDsv[1],1);
 		}
-		else if((cmdVec.at(i)==">>")) {
+		else if((cmdVec.at(i)==">>")) { //another redirection case 
 		    if(command.size() > 1){
     			command.pop_back(); 
     			char file[cmdVec.at(i+1).size()];
@@ -204,7 +208,7 @@ bool executeRedirect(vector<string>cmdVec) {
     			dup2(STDsv[1],1); 
 		    }
 		}
-		else if((cmdVec.at(i) == "<") && command.size() > 1) {
+		else if((cmdVec.at(i) == "<") && command.size() > 1) { //redirection case 
 			command.pop_back();
 			char file[cmdVec.at(i+1).size()];
 			strcpy(file,cmdVec.at(i+1).c_str());
@@ -219,7 +223,7 @@ bool executeRedirect(vector<string>cmdVec) {
 			string commnd = toString(command);
 			bool Executed = true;
 			exeCmd(commnd,Executed);
-			dup2(STDsv[0],0); //restores stdn
+			dup2(STDsv[0],0); //this will restores stdn
 		}
 		else if((cmdVec.at(i) == "|") && command.size() > 1) {
 			vector<string>secondCommand;
@@ -236,27 +240,14 @@ bool executeRedirect(vector<string>cmdVec) {
 	return true;
 }
 
-
-//next to fucntions check for parenthesis
-bool endParen(string str){
-	if(str.at(str.size() - 1) == ')')
-		return true; 
-	return false; 
-}
-
-bool openParen(string str){ 
-	if(str.at(0) == '(')
-		return true; 
-	return false; 
-}
-
 //this executes command 
 void exeCmd(string cmdLine, bool &executed) {
 	vector<string>commandArray , command; 
 	
 	
-	if (cmdLine == "exit") {
+	if (cmdLine == "EXIT") {
 		exit(0);
+		
 	}
 	stringParser(cmdLine, commandArray);
 	bool RedirectReq = false;
@@ -290,7 +281,7 @@ void exeCmd(string cmdLine, bool &executed) {
 				 
 				command.erase(command.begin()); //remove connector from command
 				command.pop_back(); //remove connector at the end
-				if (executed == true) {
+				if (executed) {
 					if(isTest(command.at(0)))
 						executed = testResult(command);
 					
@@ -306,7 +297,7 @@ void exeCmd(string cmdLine, bool &executed) {
 				
 				command.erase(command.begin());
 				command.pop_back(); 
-				if (executed == false) { 
+				if (!executed) { 
 					if(isTest(command.at(0)))
 						executed = testResult(command);
 					else if(RedirectReq) 
@@ -344,7 +335,7 @@ void exeCmd(string cmdLine, bool &executed) {
 			}
 			if (command.size() != 0 && command.at(0) == "||") {
 				command.erase(command.begin());
-				if (executed == false) {
+				if (!executed) {
 					if(isTest(command.at(0)))
 						executed = testResult(command);
 					else if(RedirectReq)
@@ -355,7 +346,7 @@ void exeCmd(string cmdLine, bool &executed) {
 			}
 			else if (command.size() != 0 && command.at(0) == "&&") {
 				command.erase(command.begin()); //delete connector
-				if (executed == true) {
+				if (executed) {
 					if(isTest(command.at(0)))
 						executed = testResult(command);
 					else if(RedirectReq) 
@@ -389,29 +380,49 @@ void exeCmd(string cmdLine, bool &executed) {
 		}
 	}
 }
-
-bool isAConnector(string str) {
-    bool ret = false;
-	if (str == "#" || str== "||" || str == "&&" || str == ";") {
-		ret = true;
-	}
-	return ret;	
-}
-bool isTest(string str){
-    bool ret = false;
-	if(str == "test" || str == "["){
-			ret= true;
-	}
+bool isSingleCmd(string str){
+    bool ret = true;
+	for(int i = 0; i < str.size(); i++)
+	    if(str.at(i) == ';');
+	    ret = false;
 	return ret;
 }
-bool hasHastag(string str){
-	for(unsigned i = 0; i < str.size(); ++i){
-			if(str.at(i) == '#') {
-					return true;
-			}
-	}
-	return false;
+
+bool isMultipleCmds(string str){
+    bool ret = false;
+    
+	for(int i = 0; i < str.size(); i++)
+	    if(str.at(i) == ';')
+	    ret = true;
+	return ret;
 }
+//this will check if the input is a connector
+bool isAConnector(string str) {
+    bool ret = false;
+    vector<string> connectors;
+    connectors.push_back("#");
+    connectors.push_back("||");
+    connectors.push_back("&&");
+    connectors.push_back(";");
+	for(int i = 0; i < connectors.size(); i++)
+	    if(str == connectors.at(i))
+	        ret = true;
+	return ret;	
+}
+//checks if it is a test
+bool isTest(string str){
+	return (str == "test" || str == "[");
+}
+//checks if there is a comment
+bool hasHastag(string str){
+    bool ret = false;
+	for(unsigned i = 0; i < str.size(); ++i)
+			if(str.at(i) == '#') 
+					ret = true;
+	return ret;
+}
+
+//checks for ;
 bool hasSemicolon(string str){ 
     bool ret = false;
 	for(unsigned i = 0; i < str.size(); ++i){
@@ -421,6 +432,7 @@ bool hasSemicolon(string str){
 	}
 	return ret; 
 }
+//will parese the string and give out cmd array
 void stringParser(string cmdln, vector<string>&cmdArrray) {
 	//convert to char and then tokenize
 	char* token; 
@@ -438,17 +450,17 @@ void stringParser(string cmdln, vector<string>&cmdArrray) {
 			
 				strToken.erase(strToken.begin() + strToken.size() -1 ); 
 				cmdArrray.push_back(strToken); 
-				cmdArrray.push_back(";");
+				cmdArrray.push_back(";"); //pushes back command                   
 			}
 			else if(hasHastag(strToken)) { //take care of #
 				strToken.erase(strToken.begin()); 
-				cmdArrray.push_back("#"); 
+				cmdArrray.push_back("#"); //pushes back command
 				cmdArrray.push_back(strToken);
 			}
 			else
 				cmdArrray.push_back(strToken); 
 		}
-		else if(endParen(strToken)){//takes care of parenthesis
+		else if(strToken.at(strToken.size() - 1) == ')'){//takes care of parenthesis
 			if(strToken.size() == 1)
 				cmdArrray.push_back(strToken);
 			else{
@@ -457,12 +469,12 @@ void stringParser(string cmdln, vector<string>&cmdArrray) {
 				cmdArrray.push_back(")");
 			}
 		}
-		else if(openParen(strToken)){
+		else if(strToken.at(0) == '('){
 			if(strToken.size() == 1)
 				cmdArrray.push_back(strToken);
 			else{
 				strToken.erase(strToken.begin());
-				cmdArrray.push_back("("); 
+				cmdArrray.push_back("(");  //takes careof ) and pushses it back
 				cmdArrray.push_back(strToken); 
 			}
 		}
@@ -471,33 +483,40 @@ void stringParser(string cmdln, vector<string>&cmdArrray) {
 		token = strtok(NULL, " ");
 	}
 }  
+
+//checks for redirection
 bool chkRed(vector<string>str) {
-	for(unsigned i = 0; i < str.size(); i++) {
-		if (str.at(i) == "|" || str.at(i) == ">" || str.at(i) == ">>" || str.at(i) == "<"){
-			return true;
-		}
-	}
-	return false;
+    bool ret = false;
+	for(unsigned i = 0; i < str.size(); i++)
+		if (str.at(i) == "|" || str.at(i) == ">" || str.at(i) == ">>" || str.at(i) == "<")
+			ret = true;
+	return ret;
 }
+void display(vector<string> a){ //for error checking and testint code
+    for(int i = 0; i < a.size(); i++){
+        cout<<a.at(i)<<endl;
+    }
+}
+
+
 
 //in main the whole thing runs
 int main () {
-	string cmdLine;
+	string cmdLine; //this is what the user will enter
 	//for exiting
 	while(cmdLine != "exit") {
-		
+		//getting username 
     	char* username = getlogin();
     	char hostname[BUFSIZ]; 
-    	gethostname(hostname, 1024);
+    	gethostname(hostname, 1024); //getting host name this is for Extra credit
     	if (username == NULL)
     		cout << "$ ";
     	else 
     		cout << "["<<username << '@' << hostname << "]$ ";
     		
 		getline(cin, cmdLine);
-		if (cmdLine == "exit") { 
+		if (cmdLine == "exit")
 			exit(0);
-		}
 		else {
 			bool Executed = true;
         	
@@ -505,12 +524,13 @@ int main () {
         	vector<string>commandList;
         	stringParser(cmdLine,parseCommands);
         	string comm;
-        	bool insideParenthesis = false;
+        	bool insideParenthesis = true;
+        	//we need to check parn and parse
         	for(unsigned i = 0; i < parseCommands.size();i++) {
         		comm += parseCommands.at(i);
         		if(i < parseCommands.size()-1) { 
-        			if(isAConnector(parseCommands.at(i+1)) && !insideParenthesis) {
-        				if(!insideParenthesis){
+        			if(isAConnector(parseCommands.at(i+1)) && insideParenthesis) {
+        				if(insideParenthesis){
         				    //removie paren
             				for(unsigned i = 0; i < comm.size(); i++) {
     		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
@@ -522,14 +542,14 @@ int main () {
         				comm.clear();
         			}
         		} //dont add a space to end of paren
-        		if(i < parseCommands.size()-1 && !endParen(parseCommands.at(i))) { 
+        		if(i < parseCommands.size()-1 && !(parseCommands.at(i).size() - 1) == ')'){ 
         			comm += " ";
         		}
         
-        		if(openParen(parseCommands.at(i))) {
-        			insideParenthesis = true;
+        		if(parseCommands.at(i).at(0) == '(') {
+        			insideParenthesis = false;
         		}
-        		else if(endParen(parseCommands.at(i))) {
+        		else if(parseCommands.at(i).size() - 1 == ')') {
         		    //remove paren
         			for(unsigned i = 0; i < comm.size(); i++) {
     		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
@@ -538,18 +558,19 @@ int main () {
     	                    }
         			commandList.push_back(comm);
         			comm.clear();
-        			insideParenthesis = false;
+        			insideParenthesis = true;
         		}
         		else if(i == parseCommands.size() - 1) {
         		    //remove paren
         			for(unsigned i = 0; i < comm.size(); i++) {
-    		                    if(comm.at(i) == '(' || comm.at(i) == ')') {
+    		                    if(comm.at(i) == '(' || comm.at(i) == ')') { //these segments are supposed to coreectly order the commandds
     		                	    comm.erase(comm.begin() + i);
     		                    }
     	                    }
         			commandList.push_back(comm);
         		}
         	}
+        	//after removing all the parenthesis we can now enter in a list into execmd
         	for (unsigned i = 0; i < commandList.size(); i++) {
         		exeCmd(commandList.at(i),Executed);
         	}

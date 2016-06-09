@@ -494,7 +494,7 @@ int main () {
     	if (username == NULL)
     		cout << "$ ";
     	else 
-    		cout << username << '@' << hostname << "$ ";
+    		cout << "["<< username << '@' << hostname << "]$ ";
     		
 		getline(cin, cmdLine);
 		if (cmdLine == "exit") { 

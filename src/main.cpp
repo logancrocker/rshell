@@ -10,8 +10,6 @@
 #include <sys/stat.h>
 #include <fcntl.h> 
 #include <math.h>
-#include <boost/algorithm/string.hpp>
-#include <pwd.h>
 
 using namespace std;
 
@@ -494,7 +492,7 @@ int main () {
     	if (username == NULL)
     		cout << "$ ";
     	else 
-    		cout << "["<< username << '@' << hostname << "]$ ";
+    		cout << username << '@' << hostname << "$ ";
     		
 		getline(cin, cmdLine);
 		if (cmdLine == "exit") { 

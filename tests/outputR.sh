@@ -1,5 +1,4 @@
-# Hello World Program in Bash Shell
-
+touch out
 ls > out
 ls >> out
 echo hello >> out

@@ -9,6 +9,8 @@ Some of the many commands are ls, echo, mkdir, etc.
 The program now takes in parenthesis, so anything within them will be executed as chuncks 
 	(echo a ||  echo b) && echo c
 	This command line will only output echo a and c.
+	
+Program now somewhat handle output/input redirection and piping
 
 -----------------------
 Known Bugs/Limitations
@@ -22,6 +24,8 @@ Incorrect parenthesis do not work like )Something()((
 Trying to echo anything with a semicolon will cut off everything after the semi colon, even with quotation marks, i.e. echo "semi;colon" will output "semi
 	
 Quotation marks are not implemented so echo "Hello world" will output "Hello world" (with quotations)
+
+Not really sure if input redirection works the way its supposed to
 
 -----------------------
 Installation
